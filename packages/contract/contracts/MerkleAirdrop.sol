@@ -11,7 +11,7 @@ contract MerkleAirdrop is IMerkleAirdrop, Ownable {
         address token;
         uint256 amount;
         bytes32 merkleRoot;
-        address[] owners;
+        address owner;
     }
 
     mapping(string => airdopInfo) airdopInfos;
@@ -22,21 +22,21 @@ contract MerkleAirdrop is IMerkleAirdrop, Ownable {
         _;
     }
 
-    function registMerkleRoot(
+    function registAirdropInfo(
         string memory name,
         address token,
         uint256 amount,
         bytes32 merkleRoot,
-        address[] calldata owners
+        address owner
     ) external {
         require(airdopInfos[name].token == address(0), "name already exists");
         require(token != address(0), "token should not be zero");
-        require(owners.length > 0, "owners should not be zero");
+        require(owner != address(0), "owner should not be zero");
         if (amount != 0) {
             IERC20(token).approve(address(this), amount);
             IERC20(token).transferFrom(msg.sender, address(this), amount);
         }
-        airdopInfos[name] = airdopInfo(token, amount, merkleRoot, owners);
+        airdopInfos[name] = airdopInfo(token, amount, merkleRoot, owner);
     }
 
     function addAirdropTokenAmount(string memory name, uint256 amount)
@@ -119,11 +119,15 @@ contract MerkleAirdrop is IMerkleAirdrop, Ownable {
         airdropInfoExists(name)
     {
         require(
+            msg.sender == airdopInfos[name].owner,
+            "Only owner of AirdropInfo can withdraw"
+        );
+        require(
             IERC20(airdopInfos[name].token).transfer(
-                owner(),
+                airdopInfos[name].owner,
                 IERC20(airdopInfos[name].token).balanceOf(address(this))
             ),
-            "withdrawUnclaimedYMT: Transfer failed."
+            "Transfer failed."
         );
     }
 }
