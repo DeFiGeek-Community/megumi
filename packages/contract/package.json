@@ -16,5 +16,8 @@
   "bugs": {
     "url": "https://github.com/DeFiGeek-Community/merkle-airdrop-tool/issues"
   },
-  "homepage": "https://github.com/DeFiGeek-Community/merkle-airdrop-tool#readme"
+  "homepage": "https://github.com/DeFiGeek-Community/merkle-airdrop-tool#readme",
+  "dependencies": {
+    "@openzeppelin/contracts": "^4.8.0"
+  }
 }
