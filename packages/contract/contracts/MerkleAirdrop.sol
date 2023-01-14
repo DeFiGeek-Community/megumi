@@ -1,15 +1,20 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
+import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import "./interfaces/IMerkleAirdrop.sol";
 
-contract MerkleAirdrop is IMerkleAirdrop, Ownable {
+error AlreadyClaimed();
+error InvalidProof();
+
+contract MerkleAirdrop is IMerkleAirdrop {
+    using SafeERC20 for IERC20;
+
     struct airdopInfo {
         address token;
-        uint256 amount;
+        uint256 depositedAmount;
+        uint256 stockAmount;
         bytes32 merkleRoot;
         address owner;
     }
@@ -25,18 +30,28 @@ contract MerkleAirdrop is IMerkleAirdrop, Ownable {
     function registAirdropInfo(
         string memory name,
         address token,
-        uint256 amount,
+        uint256 depositedAmount,
         bytes32 merkleRoot,
         address owner
     ) external {
         require(airdopInfos[name].token == address(0), "name already exists");
         require(token != address(0), "token should not be zero");
         require(owner != address(0), "owner should not be zero");
-        if (amount != 0) {
-            IERC20(token).approve(address(this), amount);
-            IERC20(token).transferFrom(msg.sender, address(this), amount);
+        if (depositedAmount != 0) {
+            IERC20(token).approve(address(this), depositedAmount);
+            IERC20(token).safeTransferFrom(
+                msg.sender,
+                address(this),
+                depositedAmount
+            );
         }
-        airdopInfos[name] = airdopInfo(token, amount, merkleRoot, owner);
+        airdopInfos[name] = airdopInfo(
+            token,
+            depositedAmount,
+            depositedAmount,
+            merkleRoot,
+            owner
+        );
     }
 
     function addAirdropTokenAmount(string memory name, uint256 amount)
@@ -45,8 +60,9 @@ contract MerkleAirdrop is IMerkleAirdrop, Ownable {
     {
         address token = airdopInfos[name].token;
         IERC20(token).approve(address(this), amount);
-        IERC20(token).transferFrom(msg.sender, address(this), amount);
-        airdopInfos[name].amount += amount;
+        IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
+        airdopInfos[name].depositedAmount += amount;
+        airdopInfos[name].stockAmount += amount;
     }
 
     function getAirdropInfo(string memory name)
@@ -90,26 +106,25 @@ contract MerkleAirdrop is IMerkleAirdrop, Ownable {
         uint256 amount,
         bytes32[] calldata merkleProof
     ) external override airdropInfoExists(name) {
-        require(!isClaimed(name, index), "Drop already claimed.");
+        airdopInfo memory namedAirdopInfo = airdopInfos[name];
+        if (isClaimed(name, index)) revert AlreadyClaimed();
         require(
-            airdopInfos[name].amount > amount,
-            "token amount is not enough"
+            namedAirdopInfo.stockAmount > amount,
+            "Token amount is not enough."
         );
 
         // Verify the merkle proof.
         bytes32 node = keccak256(abi.encodePacked(index, account, amount));
-        require(
-            MerkleProof.verify(merkleProof, airdopInfos[name].merkleRoot, node),
-            "Invalid proof."
-        );
+        if (
+            !MerkleProof.verify(merkleProof, namedAirdopInfo.merkleRoot, node)
+        ) {
+            revert InvalidProof();
+        }
 
         // Mark it claimed and send the token.
         _setClaimed(name, index);
-        airdopInfos[name].amount -= amount;
-        require(
-            IERC20(airdopInfos[name].token).transfer(account, amount),
-            "Transfer failed."
-        );
+        airdopInfos[name].stockAmount -= amount;
+        IERC20(namedAirdopInfo.token).safeTransfer(account, amount);
 
         emit Claimed(name, index, account, amount);
     }
@@ -118,16 +133,15 @@ contract MerkleAirdrop is IMerkleAirdrop, Ownable {
         external
         airdropInfoExists(name)
     {
+        airdopInfo memory namedAirdopInfo = airdopInfos[name];
         require(
-            msg.sender == airdopInfos[name].owner,
-            "Only owner of AirdropInfo can withdraw"
+            msg.sender == namedAirdopInfo.owner,
+            "Only owner of AirdropInfo can withdraw."
         );
-        require(
-            IERC20(airdopInfos[name].token).transfer(
-                airdopInfos[name].owner,
-                IERC20(airdopInfos[name].token).balanceOf(address(this))
-            ),
-            "Transfer failed."
+        airdopInfos[name].stockAmount = 0;
+        IERC20(namedAirdopInfo.token).safeTransfer(
+            namedAirdopInfo.owner,
+            namedAirdopInfo.stockAmount
         );
     }
 }
