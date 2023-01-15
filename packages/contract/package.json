@@ -19,7 +19,10 @@
   "homepage": "https://github.com/DeFiGeek-Community/merkle-airdrop-tool#readme",
   "dependencies": {
     "@openzeppelin/contracts": "^4.8.0",
-    "ethers": "^5.7.2",
-    "hardhat": "^2.12.6"
+    "ethers": "^5.7.2"
+  },
+  "devDependencies": {
+    "hardhat": "^2.12.6",
+    "ts-node": "^10.9.1"
   }
 }
