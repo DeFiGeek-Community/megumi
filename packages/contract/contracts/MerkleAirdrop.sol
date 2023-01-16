@@ -3,13 +3,15 @@ pragma solidity ^0.8.0;
 
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
-import "./interfaces/IMerkleAirdrop.sol";
 
 error AlreadyClaimed();
 error InvalidProof();
 
-contract MerkleAirdrop is IMerkleAirdrop {
+contract MerkleAirdrop {
     using SafeERC20 for IERC20;
+
+    // This event is triggered whenever a call to #claim succeeds.
+    event Claimed(string name, uint256 index, address account, uint256 amount);
 
     struct airdopInfo {
         address token;
@@ -77,7 +79,6 @@ contract MerkleAirdrop is IMerkleAirdrop {
     function isClaimed(string memory name, uint256 index)
         public
         view
-        override
         airdropInfoExists(name)
         returns (bool)
     {
@@ -105,7 +106,7 @@ contract MerkleAirdrop is IMerkleAirdrop {
         address account,
         uint256 amount,
         bytes32[] calldata merkleProof
-    ) external override airdropInfoExists(name) {
+    ) external airdropInfoExists(name) {
         airdopInfo memory namedAirdopInfo = airdopInfos[name];
         if (isClaimed(name, index)) revert AlreadyClaimed();
         require(
