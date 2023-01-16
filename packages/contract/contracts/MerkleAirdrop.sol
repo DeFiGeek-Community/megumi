@@ -24,11 +24,6 @@ contract MerkleAirdrop {
     mapping(string => airdopInfo) airdopInfos;
     mapping(string => mapping(uint256 => uint256)) claimedBitMap;
 
-    modifier airdropInfoExists(string memory name) {
-        require(airdopInfos[name].token != address(0), "name does not exists");
-        _;
-    }
-
     function registAirdropInfo(
         string memory name,
         address token,
@@ -144,5 +139,18 @@ contract MerkleAirdrop {
             namedAirdopInfo.owner,
             namedAirdopInfo.stockAmount
         );
+    }
+
+    function isAirdropInfoExists(string memory name)
+        public
+        view
+        returns (bool)
+    {
+        return airdopInfos[name].token != address(0);
+    }
+
+    modifier airdropInfoExists(string memory name) {
+        require(isAirdropInfoExists(name), "name does not exists");
+        _;
     }
 }
