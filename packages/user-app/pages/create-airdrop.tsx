@@ -52,10 +52,10 @@ export default function CreateAirdrop() {
     function NetworksButtonList() {
       return (
         <List>
-          {Object.keys(networks).map((key) => {
+          {Object.keys(networks).map((key, index) => {
             return (
-              <ListItem>
-                <Button onClick={() => switchChain(networks[key])} key={key}>
+              <ListItem key={index}>
+                <Button onClick={() => switchChain(networks[key])}>
                   {key}
                 </Button>
               </ListItem>
