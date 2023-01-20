@@ -11,7 +11,7 @@ import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import Head from "next/head";
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 
 export default function CreateAirdrop() {
   const { status, connect, account, chainId, ethereum } = useMetaMask();
@@ -136,6 +136,89 @@ export default function CreateAirdrop() {
     );
   }
 
+  const airdropTokenAddressRef = useRef<HTMLInputElement>(null);
+  const snapshotTokenAddress1Ref = useRef<HTMLInputElement>(null);
+  const snapshotTokenAddress2Ref = useRef<HTMLInputElement>(null);
+  const snapshotTokenEfficient1Ref = useRef<HTMLInputElement>(null);
+  const snapshotTokenEfficient2Ref = useRef<HTMLInputElement>(null);
+  const snapshotBlockNumberRef = useRef<HTMLInputElement>(null);
+  const excludedAddressListRef = useRef<HTMLInputElement>(null);
+  const [airdropTokenAddressValue, setAirdropTokenAddressValue] = useState("");
+  const [snapshotTokenAddress1Value, setSnapshotTokenAddress1Value] =
+    useState("");
+  const [snapshotTokenAddress2Value, setSnapshotTokenAddress2Value] =
+    useState("");
+  const [snapshotTokenEfficient1Value, setSnapshotTokenEfficient1Value] =
+    useState("");
+  const [snapshotTokenEfficient2Value, setSnapshotTokenEfficient2Value] =
+    useState("");
+  const [snapshotBlockNumberValue, setSnapshotBlockNumberValue] = useState("");
+  const [excludedAddressListValue, setExcludedAddressListValue] = useState("");
+  const [airdropTokenAddressError, setAirdropTokenAddressError] =
+    useState(false);
+  const [snapshotTokenAddress1Error, setSnapshotTokenAddress1Error] =
+    useState(false);
+  const [snapshotTokenAddress2Error, setSnapshotTokenAddress2Error] =
+    useState(false);
+  const [snapshotTokenEfficient1Error, setSnapshotTokenEfficient1Error] =
+    useState(false);
+  const [snapshotTokenEfficient2Error, setSnapshotTokenEfficient2Error] =
+    useState(false);
+  const [snapshotBlockNumberError, setSnapshotBlockNumberError] =
+    useState(false);
+  const [excludedAddressListError, setExcludedAddressListError] =
+    useState(false);
+
+  const formValidation = (): boolean => {
+    let valid = true;
+
+    let v = airdropTokenAddressRef?.current;
+    if (v) {
+      const ok = v.validity.valid;
+      v.setCustomValidity("address is not valid");
+      setAirdropTokenAddressError(!ok);
+      valid &&= ok;
+    }
+    v = snapshotTokenAddress1Ref?.current;
+    if (v) {
+      const ok = v.validity.valid;
+      setSnapshotTokenAddress1Error(!ok);
+      valid &&= ok;
+    }
+    v = snapshotTokenAddress2Ref?.current;
+    if (v) {
+      const ok = v.validity.valid;
+      setSnapshotTokenAddress2Error(!ok);
+      valid &&= ok;
+    }
+    v = snapshotTokenEfficient1Ref?.current;
+    if (v) {
+      const ok = v.validity.valid;
+      setSnapshotTokenAddress2Error(!ok);
+      valid &&= ok;
+    }
+    v = snapshotTokenEfficient2Ref?.current;
+    if (v) {
+      const ok = v.validity.valid;
+      setSnapshotTokenAddress2Error(!ok);
+      valid &&= ok;
+    }
+    v = snapshotBlockNumberRef?.current;
+    if (v) {
+      const ok = v.validity.valid;
+      setSnapshotTokenAddress2Error(!ok);
+      valid &&= ok;
+    }
+    v = excludedAddressListRef?.current;
+    if (v) {
+      const ok = v.validity.valid;
+      setSnapshotTokenAddress2Error(!ok);
+      valid &&= ok;
+    }
+
+    return valid;
+  };
+
   return (
     <>
       <Head>
@@ -170,7 +253,17 @@ export default function CreateAirdrop() {
                   >
                     Airdrop Token Address
                   </Typography>
-                  <TextField id="airdrop-token" variant="outlined" />
+                  <TextField
+                    id="airdrop-token-address"
+                    variant="outlined"
+                    required
+                    inputRef={airdropTokenAddressRef}
+                    error={airdropTokenAddressError}
+                    helperText={
+                      airdropTokenAddressError &&
+                      airdropTokenAddressRef?.current?.validationMessage
+                    }
+                  />
                   <Typography
                     sx={{
                       m: 2,
@@ -191,6 +284,8 @@ export default function CreateAirdrop() {
                         label="address"
                         id="snapshot-token-address-1"
                         variant="outlined"
+                        required
+                        inputRef={snapshotTokenAddress1Ref}
                       />
                     </Grid>
                     <Grid item xs={4}>
@@ -199,7 +294,9 @@ export default function CreateAirdrop() {
                         label="coefficient"
                         id="snapshot-token-coefficient-1"
                         variant="outlined"
+                        required
                         defaultValue="1"
+                        inputRef={snapshotTokenEfficient1Ref}
                       />
                     </Grid>
                   </Grid>
@@ -216,6 +313,7 @@ export default function CreateAirdrop() {
                         label="address"
                         id="snapshot-token-address-2"
                         variant="outlined"
+                        inputRef={snapshotTokenAddress2Ref}
                       />
                     </Grid>
                     <Grid item xs={4}>
@@ -225,6 +323,7 @@ export default function CreateAirdrop() {
                         id="snapshot-token-coefficient-2"
                         variant="outlined"
                         defaultValue="1"
+                        inputRef={snapshotTokenEfficient2Ref}
                       />
                     </Grid>
                   </Grid>
@@ -238,9 +337,11 @@ export default function CreateAirdrop() {
                   <TextField
                     id="snapshot-block-number"
                     variant="outlined"
+                    required
                     sx={{
                       width: 0.2,
                     }}
+                    inputRef={snapshotBlockNumberRef}
                   />
                   <Typography
                     sx={{
@@ -253,6 +354,7 @@ export default function CreateAirdrop() {
                     id="excluded-address-list"
                     variant="outlined"
                     multiline
+                    inputRef={excludedAddressListRef}
                   />
                 </Stack>
               </Box>
@@ -264,7 +366,18 @@ export default function CreateAirdrop() {
                   justifyContent: "center",
                 }}
               >
-                <Button variant="contained">Create Airdrop List</Button>
+                <Button
+                  variant="contained"
+                  onClick={() => {
+                    if (formValidation()) {
+                      alert("OK!");
+                    } else {
+                      alert("no");
+                    }
+                  }}
+                >
+                  Create Airdrop List
+                </Button>
               </Box>
             </Stack>
           </>
