@@ -84,10 +84,7 @@ contract MerkleAirdrop {
         return claimedWord & mask == mask;
     }
 
-    function _setClaimed(string memory name, uint256 index)
-        private
-        airdropInfoExists(name)
-    {
+    function _setClaimed(string memory name, uint256 index) private {
         uint256 claimedWordIndex = index / 256;
         uint256 claimedBitIndex = index % 256;
         claimedBitMap[name][claimedWordIndex] =
@@ -105,8 +102,8 @@ contract MerkleAirdrop {
         airdopInfo memory namedAirdopInfo = airdopInfos[name];
         if (isClaimed(name, index)) revert AlreadyClaimed();
         require(
-            namedAirdopInfo.stockAmount > amount,
-            "Token amount is not enough."
+            namedAirdopInfo.stockAmount >= amount,
+            "Token amount is not enough"
         );
 
         // Verify the merkle proof.
@@ -132,7 +129,7 @@ contract MerkleAirdrop {
         airdopInfo memory namedAirdopInfo = airdopInfos[name];
         require(
             msg.sender == namedAirdopInfo.owner,
-            "Only owner of AirdropInfo can withdraw."
+            "Only owner of AirdropInfo can withdraw"
         );
         airdopInfos[name].stockAmount = 0;
         IERC20(namedAirdopInfo.token).safeTransfer(
@@ -150,7 +147,7 @@ contract MerkleAirdrop {
     }
 
     modifier airdropInfoExists(string memory name) {
-        require(isAirdropInfoExists(name), "name does not exists");
+        require(isAirdropInfoExists(name), "name does not exist");
         _;
     }
 }
