@@ -12,6 +12,7 @@ import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import Head from "next/head";
 import { useCallback, useRef, useState } from "react";
+import { ethers } from "ethers";
 
 export default function CreateAirdrop() {
   const { status, connect, account, chainId, ethereum } = useMetaMask();
@@ -143,6 +144,7 @@ export default function CreateAirdrop() {
   const snapshotTokenEfficient2Ref = useRef<HTMLInputElement>(null);
   const snapshotBlockNumberRef = useRef<HTMLInputElement>(null);
   const excludedAddressListRef = useRef<HTMLInputElement>(null);
+
   const [airdropTokenAddressValue, setAirdropTokenAddressValue] = useState("");
   const [snapshotTokenAddress1Value, setSnapshotTokenAddress1Value] =
     useState("");
@@ -154,6 +156,7 @@ export default function CreateAirdrop() {
     useState("");
   const [snapshotBlockNumberValue, setSnapshotBlockNumberValue] = useState("");
   const [excludedAddressListValue, setExcludedAddressListValue] = useState("");
+
   const [airdropTokenAddressError, setAirdropTokenAddressError] =
     useState(false);
   const [snapshotTokenAddress1Error, setSnapshotTokenAddress1Error] =
@@ -174,45 +177,100 @@ export default function CreateAirdrop() {
 
     let v = airdropTokenAddressRef?.current;
     if (v) {
-      const ok = v.validity.valid;
-      v.setCustomValidity("address is not valid");
+      v.setCustomValidity("");
+      let ok = v.validity.valid;
+      ok &&= ethers.utils.isAddress(v.value);
       setAirdropTokenAddressError(!ok);
+      if (ok) {
+        setAirdropTokenAddressValue(v.value);
+      } else {
+        v.setCustomValidity("address is not valid");
+      }
       valid &&= ok;
     }
     v = snapshotTokenAddress1Ref?.current;
     if (v) {
-      const ok = v.validity.valid;
+      v.setCustomValidity("");
+      let ok = v.validity.valid;
+      ok &&= ethers.utils.isAddress(v.value);
       setSnapshotTokenAddress1Error(!ok);
+      if (ok) {
+        setSnapshotTokenAddress1Value(v.value);
+      } else {
+        v.setCustomValidity("address is not valid");
+      }
       valid &&= ok;
     }
     v = snapshotTokenAddress2Ref?.current;
     if (v) {
-      const ok = v.validity.valid;
+      v.setCustomValidity("");
+      let ok = v.validity.valid;
+      if (v.value !== "") {
+        ok &&= ethers.utils.isAddress(v.value);
+      }
       setSnapshotTokenAddress2Error(!ok);
+      if (ok) {
+        setSnapshotTokenAddress2Value(v.value);
+      } else {
+        v.setCustomValidity("address is not valid");
+      }
       valid &&= ok;
     }
     v = snapshotTokenEfficient1Ref?.current;
     if (v) {
-      const ok = v.validity.valid;
-      setSnapshotTokenAddress2Error(!ok);
+      v.setCustomValidity("");
+      let ok = v.validity.valid;
+      ok &&= Number.isInteger(+v.value);
+      setSnapshotTokenEfficient1Error(!ok);
+      if (ok) {
+        setSnapshotTokenEfficient1Value(v.value);
+      } else {
+        v.setCustomValidity("coefficient is only integer");
+      }
       valid &&= ok;
     }
     v = snapshotTokenEfficient2Ref?.current;
     if (v) {
-      const ok = v.validity.valid;
-      setSnapshotTokenAddress2Error(!ok);
+      v.setCustomValidity("");
+      let ok = v.validity.valid;
+      ok &&= Number.isInteger(+v.value);
+      setSnapshotTokenEfficient2Error(!ok);
+      if (ok) {
+        setSnapshotTokenEfficient2Value(v.value);
+      } else {
+        v.setCustomValidity("coefficient is only integer");
+      }
       valid &&= ok;
     }
     v = snapshotBlockNumberRef?.current;
     if (v) {
-      const ok = v.validity.valid;
-      setSnapshotTokenAddress2Error(!ok);
+      v.setCustomValidity("");
+      let ok = v.validity.valid;
+      ok &&= Number.isInteger(+v.value);
+      setSnapshotBlockNumberError(!ok);
+      if (ok) {
+        setSnapshotBlockNumberValue(v.value);
+      } else {
+        v.setCustomValidity("block number is only integer");
+      }
       valid &&= ok;
     }
     v = excludedAddressListRef?.current;
     if (v) {
-      const ok = v.validity.valid;
-      setSnapshotTokenAddress2Error(!ok);
+      v.setCustomValidity("");
+      let ok = v.validity.valid;
+      if (v.value !== "") {
+        let spl = v.value.split(/\r?\n/);
+        spl.forEach(function (elm) {
+          ok &&= ethers.utils.isAddress(elm);
+        });
+      }
+      setExcludedAddressListError(!ok);
+      if (ok) {
+        setExcludedAddressListValue(v.value);
+      } else {
+        v.setCustomValidity("address is not valid");
+      }
       valid &&= ok;
     }
 
@@ -286,6 +344,11 @@ export default function CreateAirdrop() {
                         variant="outlined"
                         required
                         inputRef={snapshotTokenAddress1Ref}
+                        error={snapshotTokenAddress1Error}
+                        helperText={
+                          snapshotTokenAddress1Error &&
+                          snapshotTokenAddress1Ref?.current?.validationMessage
+                        }
                       />
                     </Grid>
                     <Grid item xs={4}>
@@ -297,6 +360,11 @@ export default function CreateAirdrop() {
                         required
                         defaultValue="1"
                         inputRef={snapshotTokenEfficient1Ref}
+                        error={snapshotTokenEfficient1Error}
+                        helperText={
+                          snapshotTokenEfficient1Error &&
+                          snapshotTokenEfficient1Ref?.current?.validationMessage
+                        }
                       />
                     </Grid>
                   </Grid>
@@ -314,6 +382,11 @@ export default function CreateAirdrop() {
                         id="snapshot-token-address-2"
                         variant="outlined"
                         inputRef={snapshotTokenAddress2Ref}
+                        error={snapshotTokenAddress2Error}
+                        helperText={
+                          snapshotTokenAddress2Error &&
+                          snapshotTokenAddress2Ref?.current?.validationMessage
+                        }
                       />
                     </Grid>
                     <Grid item xs={4}>
@@ -324,6 +397,11 @@ export default function CreateAirdrop() {
                         variant="outlined"
                         defaultValue="1"
                         inputRef={snapshotTokenEfficient2Ref}
+                        error={snapshotTokenEfficient2Error}
+                        helperText={
+                          snapshotTokenEfficient2Error &&
+                          snapshotTokenEfficient2Ref?.current?.validationMessage
+                        }
                       />
                     </Grid>
                   </Grid>
@@ -342,19 +420,29 @@ export default function CreateAirdrop() {
                       width: 0.2,
                     }}
                     inputRef={snapshotBlockNumberRef}
+                    error={snapshotBlockNumberError}
+                    helperText={
+                      snapshotBlockNumberError &&
+                      snapshotBlockNumberRef?.current?.validationMessage
+                    }
                   />
                   <Typography
                     sx={{
                       m: 2,
                     }}
                   >
-                    Excluded Address List(Separated by commas or line breaks)
+                    Excluded Address List(Separated by line breaks)
                   </Typography>
                   <TextField
                     id="excluded-address-list"
                     variant="outlined"
                     multiline
                     inputRef={excludedAddressListRef}
+                    error={excludedAddressListError}
+                    helperText={
+                      excludedAddressListError &&
+                      excludedAddressListRef?.current?.validationMessage
+                    }
                   />
                 </Stack>
               </Box>
@@ -370,9 +458,9 @@ export default function CreateAirdrop() {
                   variant="contained"
                   onClick={() => {
                     if (formValidation()) {
-                      alert("OK!");
+                      console.log("OK!");
                     } else {
-                      alert("no");
+                      console.log("NG");
                     }
                   }}
                 >
