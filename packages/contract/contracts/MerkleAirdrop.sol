@@ -6,12 +6,22 @@ import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProo
 
 error AlreadyClaimed();
 error InvalidProof();
+error AirDropInfoExist();
+error AirDropInfoNotExist();
+error NotZeroRequired();
+error AmountNotEnough();
+error NotOwner();
 
 contract MerkleAirdrop {
     using SafeERC20 for IERC20;
 
     // This event is triggered whenever a call to #claim succeeds.
-    event Claimed(string name, uint256 index, address account, uint256 amount);
+    event Claimed(
+        bytes32 indexed name,
+        uint256 index,
+        address indexed account,
+        uint256 amount
+    );
 
     struct airdopInfo {
         address token;
@@ -21,27 +31,27 @@ contract MerkleAirdrop {
         address owner;
     }
 
-    mapping(string => airdopInfo) airdopInfos;
-    mapping(string => mapping(uint256 => uint256)) claimedBitMap;
+    mapping(bytes32 => airdopInfo) airdopInfos;
+    mapping(bytes32 => mapping(uint256 => uint256)) claimedBitMap;
 
     function registAirdropInfo(
-        string memory name,
+        bytes32 name,
         address token,
         uint256 depositedAmount,
         bytes32 merkleRoot,
         address owner
     ) external {
-        require(airdopInfos[name].token == address(0), "name already exists");
-        require(token != address(0), "token should not be zero");
-        require(owner != address(0), "owner should not be zero");
-        if (depositedAmount != 0) {
-            IERC20(token).approve(address(this), depositedAmount);
-            IERC20(token).safeTransferFrom(
-                msg.sender,
-                address(this),
-                depositedAmount
-            );
-        }
+        if (airdopInfos[name].token != address(0)) revert AirDropInfoExist();
+        if (token == address(0)) revert NotZeroRequired();
+        if (owner == address(0)) revert NotZeroRequired();
+
+        IERC20(token).approve(address(this), depositedAmount);
+        IERC20(token).safeTransferFrom(
+            msg.sender,
+            address(this),
+            depositedAmount
+        );
+
         airdopInfos[name] = airdopInfo(
             token,
             depositedAmount,
@@ -51,9 +61,9 @@ contract MerkleAirdrop {
         );
     }
 
-    function addAirdropTokenAmount(string memory name, uint256 amount)
+    function addAirdropTokenAmount(bytes32 name, uint256 amount)
         external
-        airdropInfoExists(name)
+        airdropInfoExist(name)
     {
         address token = airdopInfos[name].token;
         IERC20(token).approve(address(this), amount);
@@ -62,30 +72,30 @@ contract MerkleAirdrop {
         airdopInfos[name].stockAmount += amount;
     }
 
-    function getAirdropInfo(string memory name)
+    function getAirdropInfo(bytes32 name)
         external
         view
-        airdropInfoExists(name)
+        airdropInfoExist(name)
         returns (airdopInfo memory)
     {
         return airdopInfos[name];
     }
 
-    function isClaimed(string memory name, uint256 index)
+    function isClaimed(bytes32 name, uint256 index)
         public
         view
-        airdropInfoExists(name)
+        airdropInfoExist(name)
         returns (bool)
     {
-        uint256 claimedWordIndex = index / 256;
+        uint256 claimedWordIndex = index >> 8;
         uint256 claimedBitIndex = index % 256;
         uint256 claimedWord = claimedBitMap[name][claimedWordIndex];
         uint256 mask = (1 << claimedBitIndex);
         return claimedWord & mask == mask;
     }
 
-    function _setClaimed(string memory name, uint256 index) private {
-        uint256 claimedWordIndex = index / 256;
+    function _setClaimed(bytes32 name, uint256 index) private {
+        uint256 claimedWordIndex = index >> 8;
         uint256 claimedBitIndex = index % 256;
         claimedBitMap[name][claimedWordIndex] =
             claimedBitMap[name][claimedWordIndex] |
@@ -93,18 +103,15 @@ contract MerkleAirdrop {
     }
 
     function claim(
-        string memory name,
+        bytes32 name,
         uint256 index,
         address account,
         uint256 amount,
         bytes32[] calldata merkleProof
-    ) external airdropInfoExists(name) {
+    ) external airdropInfoExist(name) {
         airdopInfo memory namedAirdopInfo = airdopInfos[name];
         if (isClaimed(name, index)) revert AlreadyClaimed();
-        require(
-            namedAirdopInfo.stockAmount >= amount,
-            "Token amount is not enough"
-        );
+        if (namedAirdopInfo.stockAmount < amount) revert AmountNotEnough();
 
         // Verify the merkle proof.
         bytes32 node = keccak256(abi.encodePacked(index, account, amount));
@@ -122,15 +129,13 @@ contract MerkleAirdrop {
         emit Claimed(name, index, account, amount);
     }
 
-    function withdrawUnclaimedToken(string memory name)
+    function withdrawUnclaimedToken(bytes32 name)
         external
-        airdropInfoExists(name)
+        airdropInfoExist(name)
     {
         airdopInfo memory namedAirdopInfo = airdopInfos[name];
-        require(
-            msg.sender == namedAirdopInfo.owner,
-            "Only owner of AirdropInfo can withdraw"
-        );
+        if (msg.sender != namedAirdopInfo.owner) revert NotOwner();
+        airdopInfos[name].depositedAmount -= namedAirdopInfo.stockAmount;
         airdopInfos[name].stockAmount = 0;
         IERC20(namedAirdopInfo.token).safeTransfer(
             namedAirdopInfo.owner,
@@ -138,16 +143,12 @@ contract MerkleAirdrop {
         );
     }
 
-    function isAirdropInfoExists(string memory name)
-        public
-        view
-        returns (bool)
-    {
-        return airdopInfos[name].token != address(0);
+    function isAirdropInfoNotExist(bytes32 name) public view returns (bool) {
+        return airdopInfos[name].token == address(0);
     }
 
-    modifier airdropInfoExists(string memory name) {
-        require(isAirdropInfoExists(name), "name does not exist");
+    modifier airdropInfoExist(bytes32 name) {
+        if (isAirdropInfoNotExist(name)) revert AirDropInfoNotExist();
         _;
     }
 }
