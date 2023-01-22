@@ -8,15 +8,64 @@ import List from "@mui/material/List";
 import ListItem from "@mui/material/ListItem";
 import Popover from "@mui/material/Popover";
 import Stack from "@mui/material/Stack";
+import Table from "@mui/material/Table";
+import TableBody from "@mui/material/TableBody";
+import TableCell from "@mui/material/TableCell";
+import TableHead from "@mui/material/TableHead";
+import TableRow from "@mui/material/TableRow";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import Head from "next/head";
 import { useCallback, useRef, useState } from "react";
-import { ethers } from "ethers";
+import { BigNumber, ethers } from "ethers";
+
+type OnChangeEvent = React.ChangeEvent<HTMLInputElement>;
 
 export default function CreateAirdrop() {
   const { status, connect, account, chainId, ethereum } = useMetaMask();
   const { switchChain } = useMetaMask();
+
+  const airdropTokenAddressRef = useRef<HTMLInputElement>(null);
+  const airdropTokenAmountRef = useRef<HTMLInputElement>(null);
+  const snapshotTokenAddress1Ref = useRef<HTMLInputElement>(null);
+  const snapshotTokenAddress2Ref = useRef<HTMLInputElement>(null);
+  const snapshotTokenCoefficient1Ref = useRef<HTMLInputElement>(null);
+  const snapshotTokenCoefficient2Ref = useRef<HTMLInputElement>(null);
+  const snapshotBlockNumberRef = useRef<HTMLInputElement>(null);
+  const excludedAddressListRef = useRef<HTMLInputElement>(null);
+
+  const [airdropTokenAddressValue, setAirdropTokenAddressValue] = useState("");
+  const [airdropTokenAmountValue, setAirdropTokenAmountValue] = useState("");
+  const [snapshotTokenAddress1Value, setSnapshotTokenAddress1Value] =
+    useState("");
+  const [snapshotTokenAddress2Value, setSnapshotTokenAddress2Value] =
+    useState("");
+  const [snapshotTokenCoefficient1Value, setSnapshotTokenCoefficient1Value] =
+    useState("1");
+  const [snapshotTokenCoefficient2Value, setSnapshotTokenCoefficient2Value] =
+    useState("1");
+  const [snapshotBlockNumberValue, setSnapshotBlockNumberValue] = useState("");
+  const [excludedAddressListValue, setExcludedAddressListValue] = useState("");
+
+  const [airdropTokenAddressError, setAirdropTokenAddressError] =
+    useState(false);
+  const [airdropTokenAmountError, setAirdropTokenAmountError] = useState(false);
+  const [snapshotTokenAddress1Error, setSnapshotTokenAddress1Error] =
+    useState(false);
+  const [snapshotTokenAddress2Error, setSnapshotTokenAddress2Error] =
+    useState(false);
+  const [snapshotTokenCoefficient1Error, setSnapshotTokenCoefficient1Error] =
+    useState(false);
+  const [snapshotTokenCoefficient2Error, setSnapshotTokenCoefficient2Error] =
+    useState(false);
+  const [snapshotBlockNumberError, setSnapshotBlockNumberError] =
+    useState(false);
+  const [excludedAddressListError, setExcludedAddressListError] =
+    useState(false);
+
+  const [airdropList, setAirdropList] = useState<{
+    [address: string]: BigNumber;
+  }>({});
 
   function shortenAddress(address: string | null) {
     if (address === null) {
@@ -137,40 +186,33 @@ export default function CreateAirdrop() {
     );
   }
 
-  const airdropTokenAddressRef = useRef<HTMLInputElement>(null);
-  const snapshotTokenAddress1Ref = useRef<HTMLInputElement>(null);
-  const snapshotTokenAddress2Ref = useRef<HTMLInputElement>(null);
-  const snapshotTokenEfficient1Ref = useRef<HTMLInputElement>(null);
-  const snapshotTokenEfficient2Ref = useRef<HTMLInputElement>(null);
-  const snapshotBlockNumberRef = useRef<HTMLInputElement>(null);
-  const excludedAddressListRef = useRef<HTMLInputElement>(null);
-
-  const [airdropTokenAddressValue, setAirdropTokenAddressValue] = useState("");
-  const [snapshotTokenAddress1Value, setSnapshotTokenAddress1Value] =
-    useState("");
-  const [snapshotTokenAddress2Value, setSnapshotTokenAddress2Value] =
-    useState("");
-  const [snapshotTokenEfficient1Value, setSnapshotTokenEfficient1Value] =
-    useState("");
-  const [snapshotTokenEfficient2Value, setSnapshotTokenEfficient2Value] =
-    useState("");
-  const [snapshotBlockNumberValue, setSnapshotBlockNumberValue] = useState("");
-  const [excludedAddressListValue, setExcludedAddressListValue] = useState("");
-
-  const [airdropTokenAddressError, setAirdropTokenAddressError] =
-    useState(false);
-  const [snapshotTokenAddress1Error, setSnapshotTokenAddress1Error] =
-    useState(false);
-  const [snapshotTokenAddress2Error, setSnapshotTokenAddress2Error] =
-    useState(false);
-  const [snapshotTokenEfficient1Error, setSnapshotTokenEfficient1Error] =
-    useState(false);
-  const [snapshotTokenEfficient2Error, setSnapshotTokenEfficient2Error] =
-    useState(false);
-  const [snapshotBlockNumberError, setSnapshotBlockNumberError] =
-    useState(false);
-  const [excludedAddressListError, setExcludedAddressListError] =
-    useState(false);
+  function AirdropList() {
+    return (
+      <Table
+        aria-label="simple table"
+        sx={{
+          width: 0,
+        }}
+      >
+        <TableHead>
+          <TableRow>
+            <TableCell>Address</TableCell>
+            <TableCell align="right">Amount</TableCell>
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {Object.keys(airdropList).map((key, index) => (
+            <TableRow key={index}>
+              <TableCell component="th" scope="row">
+                {key}
+              </TableCell>
+              <TableCell align="right">{airdropList[key].toString()}</TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    );
+  }
 
   const formValidation = (): boolean => {
     let valid = true;
@@ -181,10 +223,19 @@ export default function CreateAirdrop() {
       let ok = v.validity.valid;
       ok &&= ethers.utils.isAddress(v.value);
       setAirdropTokenAddressError(!ok);
-      if (ok) {
-        setAirdropTokenAddressValue(v.value);
-      } else {
+      if (!ok) {
         v.setCustomValidity("address is not valid");
+      }
+      valid &&= ok;
+    }
+    v = airdropTokenAmountRef?.current;
+    if (v) {
+      v.setCustomValidity("");
+      let ok = v.validity.valid;
+      ok &&= Number.isInteger(+v.value);
+      setAirdropTokenAmountError(!ok);
+      if (!ok) {
+        v.setCustomValidity("amount is only integer");
       }
       valid &&= ok;
     }
@@ -194,9 +245,7 @@ export default function CreateAirdrop() {
       let ok = v.validity.valid;
       ok &&= ethers.utils.isAddress(v.value);
       setSnapshotTokenAddress1Error(!ok);
-      if (ok) {
-        setSnapshotTokenAddress1Value(v.value);
-      } else {
+      if (!ok) {
         v.setCustomValidity("address is not valid");
       }
       valid &&= ok;
@@ -209,35 +258,29 @@ export default function CreateAirdrop() {
         ok &&= ethers.utils.isAddress(v.value);
       }
       setSnapshotTokenAddress2Error(!ok);
-      if (ok) {
-        setSnapshotTokenAddress2Value(v.value);
-      } else {
+      if (!ok) {
         v.setCustomValidity("address is not valid");
       }
       valid &&= ok;
     }
-    v = snapshotTokenEfficient1Ref?.current;
+    v = snapshotTokenCoefficient1Ref?.current;
     if (v) {
       v.setCustomValidity("");
       let ok = v.validity.valid;
       ok &&= Number.isInteger(+v.value);
-      setSnapshotTokenEfficient1Error(!ok);
-      if (ok) {
-        setSnapshotTokenEfficient1Value(v.value);
-      } else {
+      setSnapshotTokenCoefficient1Error(!ok);
+      if (!ok) {
         v.setCustomValidity("coefficient is only integer");
       }
       valid &&= ok;
     }
-    v = snapshotTokenEfficient2Ref?.current;
+    v = snapshotTokenCoefficient2Ref?.current;
     if (v) {
       v.setCustomValidity("");
       let ok = v.validity.valid;
       ok &&= Number.isInteger(+v.value);
-      setSnapshotTokenEfficient2Error(!ok);
-      if (ok) {
-        setSnapshotTokenEfficient2Value(v.value);
-      } else {
+      setSnapshotTokenCoefficient2Error(!ok);
+      if (!ok) {
         v.setCustomValidity("coefficient is only integer");
       }
       valid &&= ok;
@@ -248,9 +291,7 @@ export default function CreateAirdrop() {
       let ok = v.validity.valid;
       ok &&= Number.isInteger(+v.value);
       setSnapshotBlockNumberError(!ok);
-      if (ok) {
-        setSnapshotBlockNumberValue(v.value);
-      } else {
+      if (!ok) {
         v.setCustomValidity("block number is only integer");
       }
       valid &&= ok;
@@ -266,15 +307,124 @@ export default function CreateAirdrop() {
         });
       }
       setExcludedAddressListError(!ok);
-      if (ok) {
-        setExcludedAddressListValue(v.value);
-      } else {
+      if (!ok) {
         v.setCustomValidity("address is not valid");
       }
       valid &&= ok;
     }
 
     return valid;
+  };
+
+  const extractTokenBalance = async (
+    snapshotAmount: { [address: string]: BigNumber },
+    ttlSnapshotAmount: BigNumber,
+    snapshotTokenAddress: string,
+    coefficient: string
+  ): Promise<[{ [address: string]: BigNumber }, BigNumber]> => {
+    const BASE_URL = "https://api.covalenthq.com/v1/1/";
+    const TOKEN_HOLDERS_URL = "/token_holders/?";
+    const COVALENT_API_KEY = process.env.COVALENT_API_KEY as string;
+    let param = new URLSearchParams({
+      key: COVALENT_API_KEY,
+      // 'block-height': snapshotBlockNumberValue,
+      "page-size": "1000",
+    });
+    let response;
+    let pageNumber = 0;
+
+    console.log(snapshotTokenAddress);
+
+    while (true) {
+      param.set("page-number", pageNumber.toString());
+      response = await fetch(
+        BASE_URL +
+          "tokens/" +
+          snapshotTokenAddress +
+          TOKEN_HOLDERS_URL +
+          param.toString()
+      );
+      if (response.ok) {
+        response = await response.json();
+        response = response.data;
+        response.items.map((data: { address: string; balance: string }) => {
+          if (excludedAddressListValue.includes(data.address)) {
+            return;
+          }
+          const parsedAmount = BigNumber.from(data.balance).mul(
+            BigNumber.from(coefficient)
+          );
+          if (snapshotAmount[data.address] == undefined) {
+            snapshotAmount[data.address] = parsedAmount;
+          } else {
+            snapshotAmount[data.address].add(parsedAmount);
+          }
+          ttlSnapshotAmount.add(parsedAmount);
+        });
+        console.log(response);
+        if (response.pagination["has_more"]) {
+          pageNumber += 1;
+        } else {
+          break;
+        }
+      } else {
+        console.error(response);
+        alert("internal error, see console");
+        return [snapshotAmount, ttlSnapshotAmount];
+      }
+    }
+
+    return [snapshotAmount, ttlSnapshotAmount];
+  };
+
+  const generateAirdropList = async () => {
+    let snapshotAmount: { [address: string]: BigNumber } = {};
+    let airdropAmounts: { [address: string]: BigNumber } = {};
+    let ttlSnapshotAmount = BigNumber.from(0);
+    let ttlAirdropAmount = BigNumber.from(0);
+    let airdropAmount = BigNumber.from(airdropTokenAmountValue);
+
+    console.log(airdropTokenAddressValue);
+    console.log(airdropTokenAmountValue);
+    console.log(snapshotTokenAddress1Value);
+    console.log(snapshotTokenCoefficient1Value);
+
+    let [resSnapshotAmount, resTtlSnapshotAmount] = await extractTokenBalance(
+      snapshotAmount,
+      ttlSnapshotAmount,
+      snapshotTokenAddress1Value,
+      snapshotTokenCoefficient1Value
+    );
+    snapshotAmount = resSnapshotAmount;
+    ttlSnapshotAmount = resTtlSnapshotAmount;
+
+    if (snapshotTokenAddress2Value !== "") {
+      [resSnapshotAmount, resTtlSnapshotAmount] = await extractTokenBalance(
+        snapshotAmount,
+        ttlSnapshotAmount,
+        snapshotTokenAddress2Value,
+        snapshotTokenCoefficient2Value
+      );
+      snapshotAmount = resSnapshotAmount;
+      ttlSnapshotAmount = resTtlSnapshotAmount;
+    }
+
+    let tmp = Object.keys(snapshotAmount).map((k) => ({
+      key: k,
+      value: snapshotAmount[k],
+    }));
+    tmp.sort((a, b) => {
+      if (b.key > a.key) return 1;
+      else return 0;
+    });
+    snapshotAmount = Object.assign(
+      {},
+      ...tmp.map((item) => ({
+        [item.key]: item.value,
+      }))
+    );
+    console.log(snapshotAmount);
+    setAirdropList(snapshotAmount);
   };
 
   return (
@@ -315,11 +465,35 @@ export default function CreateAirdrop() {
                     id="airdrop-token-address"
                     variant="outlined"
                     required
+                    onChange={(e: OnChangeEvent) =>
+                      setAirdropTokenAddressValue(e.target.value)
+                    }
                     inputRef={airdropTokenAddressRef}
                     error={airdropTokenAddressError}
                     helperText={
                       airdropTokenAddressError &&
                       airdropTokenAddressRef?.current?.validationMessage
+                    }
+                  />
+                  <Typography
+                    sx={{
+                      m: 2,
+                    }}
+                  >
+                    Airdrop Token Amount
+                  </Typography>
+                  <TextField
+                    id="airdrop-token-amount"
+                    variant="outlined"
+                    required
+                    onChange={(e: OnChangeEvent) =>
+                      setAirdropTokenAmountValue(e.target.value)
+                    }
+                    inputRef={airdropTokenAmountRef}
+                    error={airdropTokenAmountError}
+                    helperText={
+                      airdropTokenAmountError &&
+                      airdropTokenAmountRef?.current?.validationMessage
                     }
                   />
                   <Typography
@@ -343,6 +517,9 @@ export default function CreateAirdrop() {
                         id="snapshot-token-address-1"
                         variant="outlined"
                         required
+                        onChange={(e: OnChangeEvent) =>
+                          setSnapshotTokenAddress1Value(e.target.value)
+                        }
                         inputRef={snapshotTokenAddress1Ref}
                         error={snapshotTokenAddress1Error}
                         helperText={
@@ -359,11 +536,15 @@ export default function CreateAirdrop() {
                         variant="outlined"
                         required
                         defaultValue="1"
-                        inputRef={snapshotTokenEfficient1Ref}
-                        error={snapshotTokenEfficient1Error}
+                        onChange={(e: OnChangeEvent) =>
+                          setSnapshotTokenCoefficient1Value(e.target.value)
+                        }
+                        inputRef={snapshotTokenCoefficient1Ref}
+                        error={snapshotTokenCoefficient1Error}
                         helperText={
-                          snapshotTokenEfficient1Error &&
-                          snapshotTokenEfficient1Ref?.current?.validationMessage
+                          snapshotTokenCoefficient1Error &&
+                          snapshotTokenCoefficient1Ref?.current
+                            ?.validationMessage
                         }
                       />
                     </Grid>
@@ -381,6 +562,9 @@ export default function CreateAirdrop() {
                         label="address"
                         id="snapshot-token-address-2"
                         variant="outlined"
+                        onChange={(e: OnChangeEvent) =>
+                          setSnapshotTokenAddress2Value(e.target.value)
+                        }
                         inputRef={snapshotTokenAddress2Ref}
                         error={snapshotTokenAddress2Error}
                         helperText={
@@ -396,11 +580,15 @@ export default function CreateAirdrop() {
                         id="snapshot-token-coefficient-2"
                         variant="outlined"
                         defaultValue="1"
-                        inputRef={snapshotTokenEfficient2Ref}
-                        error={snapshotTokenEfficient2Error}
+                        onChange={(e: OnChangeEvent) =>
+                          setSnapshotTokenCoefficient2Value(e.target.value)
+                        }
+                        inputRef={snapshotTokenCoefficient2Ref}
+                        error={snapshotTokenCoefficient2Error}
                         helperText={
-                          snapshotTokenEfficient2Error &&
-                          snapshotTokenEfficient2Ref?.current?.validationMessage
+                          snapshotTokenCoefficient2Error &&
+                          snapshotTokenCoefficient2Ref?.current
+                            ?.validationMessage
                         }
                       />
                     </Grid>
@@ -419,6 +607,9 @@ export default function CreateAirdrop() {
                     sx={{
                       width: 0.2,
                     }}
+                    onChange={(e: OnChangeEvent) =>
+                      setSnapshotBlockNumberValue(e.target.value)
+                    }
                     inputRef={snapshotBlockNumberRef}
                     error={snapshotBlockNumberError}
                     helperText={
@@ -437,6 +628,9 @@ export default function CreateAirdrop() {
                     id="excluded-address-list"
                     variant="outlined"
                     multiline
+                    onChange={(e: OnChangeEvent) =>
+                      setExcludedAddressListValue(e.target.value)
+                    }
                     inputRef={excludedAddressListRef}
                     error={excludedAddressListError}
                     helperText={
@@ -458,14 +652,22 @@ export default function CreateAirdrop() {
                   variant="contained"
                   onClick={() => {
                     if (formValidation()) {
-                      console.log("OK!");
-                    } else {
-                      console.log("NG");
+                      generateAirdropList();
                     }
                   }}
                 >
                   Create Airdrop List
                 </Button>
+              </Box>
+              <Box
+                sx={{
+                  p: 1,
+                  m: 2,
+                  display: "flex",
+                  justifyContent: "center",
+                }}
+              >
+                <AirdropList />
               </Box>
             </Stack>
           </>
