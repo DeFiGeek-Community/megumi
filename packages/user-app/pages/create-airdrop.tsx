@@ -11,6 +11,7 @@ import Stack from "@mui/material/Stack";
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
 import TableCell from "@mui/material/TableCell";
+import TableContainer from "@mui/material/TableContainer";
 import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import TextField from "@mui/material/TextField";
@@ -63,9 +64,8 @@ export default function CreateAirdrop() {
   const [excludedAddressListError, setExcludedAddressListError] =
     useState(false);
 
-  const [airdropList, setAirdropList] = useState<{
-    [address: string]: BigNumber;
-  }>({});
+  const [snapshotList, setSnaphshotList] = useState<[string, BigNumber][]>([]);
+  const [airdropList, setAirdropList] = useState<[string, BigNumber][]>([]);
 
   function shortenAddress(address: string | null) {
     if (address === null) {
@@ -186,31 +186,68 @@ export default function CreateAirdrop() {
     );
   }
 
-  function AirdropList() {
+  function AirdropcalculatedList() {
     return (
-      <Table
-        aria-label="simple table"
-        sx={{
-          width: 0,
-        }}
-      >
-        <TableHead>
-          <TableRow>
-            <TableCell>Address</TableCell>
-            <TableCell align="right">Amount</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {Object.keys(airdropList).map((key, index) => (
-            <TableRow key={index}>
-              <TableCell component="th" scope="row">
-                {key}
-              </TableCell>
-              <TableCell align="right">{airdropList[key].toString()}</TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+      <>
+        <TableContainer
+          sx={{
+            m: 1,
+            width: 0.4,
+            height: 500,
+          }}
+        >
+          <Table aria-label="simple table" stickyHeader>
+            <TableHead>
+              <TableRow>
+                <TableCell colSpan={2}>Snapshot Amount</TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell>Address</TableCell>
+                <TableCell align="right">Amount</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {snapshotList.map((elm, index) => (
+                <TableRow key={index}>
+                  <TableCell component="th" scope="row">
+                    {elm[0]}
+                  </TableCell>
+                  <TableCell align="right">{elm[1].toString()}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+        <TableContainer
+          sx={{
+            m: 1,
+            width: 0.4,
+            height: 500,
+          }}
+        >
+          <Table aria-label="simple table" stickyHeader>
+            <TableHead>
+              <TableRow>
+                <TableCell colSpan={2}>Airdrop Amount</TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell>Address</TableCell>
+                <TableCell align="right">Amount</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {airdropList.map((elm, index) => (
+                <TableRow key={index}>
+                  <TableCell component="th" scope="row">
+                    {elm[0]}
+                  </TableCell>
+                  <TableCell align="right">{elm[1].toString()}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </>
     );
   }
 
@@ -333,8 +370,6 @@ export default function CreateAirdrop() {
     let response;
     let pageNumber = 0;
 
-    console.log(snapshotTokenAddress);
-
     while (true) {
       param.set("page-number", pageNumber.toString());
       response = await fetch(
@@ -359,9 +394,8 @@ export default function CreateAirdrop() {
           } else {
             snapshotAmount[data.address].add(parsedAmount);
           }
-          ttlSnapshotAmount.add(parsedAmount);
+          ttlSnapshotAmount = ttlSnapshotAmount.add(parsedAmount);
         });
-        console.log(response);
         if (response.pagination["has_more"]) {
           pageNumber += 1;
         } else {
@@ -378,53 +412,67 @@ export default function CreateAirdrop() {
   };
 
   const generateAirdropList = async () => {
-    let snapshotAmount: { [address: string]: BigNumber } = {};
-    let airdropAmounts: { [address: string]: BigNumber } = {};
+    let snapshotAmountDict: { [address: string]: BigNumber } = {};
+    let airdropAmountDict: { [address: string]: BigNumber } = {};
     let ttlSnapshotAmount = BigNumber.from(0);
     let ttlAirdropAmount = BigNumber.from(0);
     let airdropAmount = BigNumber.from(airdropTokenAmountValue);
 
-    console.log(airdropTokenAddressValue);
-    console.log(airdropTokenAmountValue);
-    console.log(snapshotTokenAddress1Value);
-    console.log(snapshotTokenCoefficient1Value);
-
     let [resSnapshotAmount, resTtlSnapshotAmount] = await extractTokenBalance(
-      snapshotAmount,
+      snapshotAmountDict,
       ttlSnapshotAmount,
       snapshotTokenAddress1Value,
       snapshotTokenCoefficient1Value
     );
-    snapshotAmount = resSnapshotAmount;
+    snapshotAmountDict = resSnapshotAmount;
     ttlSnapshotAmount = resTtlSnapshotAmount;
 
     if (snapshotTokenAddress2Value !== "") {
       [resSnapshotAmount, resTtlSnapshotAmount] = await extractTokenBalance(
-        snapshotAmount,
+        snapshotAmountDict,
         ttlSnapshotAmount,
         snapshotTokenAddress2Value,
         snapshotTokenCoefficient2Value
       );
-      snapshotAmount = resSnapshotAmount;
+      snapshotAmountDict = resSnapshotAmount;
       ttlSnapshotAmount = resTtlSnapshotAmount;
     }
 
-    let tmp = Object.keys(snapshotAmount).map((k) => ({
-      key: k,
-      value: snapshotAmount[k],
-    }));
-    tmp.sort((a, b) => {
-      if (b.key > a.key) return 1;
-      else return 0;
-    });
-    snapshotAmount = Object.assign(
-      {},
-      ...tmp.map((item) => ({
-        [item.key]: item.value,
-      }))
+    let snapshotAmountList = Object.entries(snapshotAmountDict).sort(
+      (p1, p2) => {
+        let p1Key = p1[0];
+        let p2Key = p2[0];
+        if (p1Key < p2Key) {
+          return -1;
+        }
+        if (p1Key > p2Key) {
+          return 1;
+        }
+        return 0;
+      }
     );
-    console.log(snapshotAmount);
-    setAirdropList(snapshotAmount);
+
+    setSnaphshotList(snapshotAmountList);
+
+    snapshotAmountList.map((elm) => {
+      let calculatedAmount = airdropAmount.mul(elm[1]).div(ttlSnapshotAmount);
+      ttlAirdropAmount.add(calculatedAmount);
+      airdropAmountDict[elm[0]] = calculatedAmount;
+    });
+
+    let airdropAmountList = Object.entries(airdropAmountDict).sort((p1, p2) => {
+      let p1Key = p1[0];
+      let p2Key = p2[0];
+      if (p1Key < p2Key) {
+        return -1;
+      }
+      if (p1Key > p2Key) {
+        return 1;
+      }
+      return 0;
+    });
+
+    setAirdropList(airdropAmountList);
   };
 
   return (
@@ -667,7 +715,7 @@ export default function CreateAirdrop() {
                   justifyContent: "center",
                 }}
               >
-                <AirdropList />
+                <AirdropcalculatedList />
               </Box>
             </Stack>
           </>
