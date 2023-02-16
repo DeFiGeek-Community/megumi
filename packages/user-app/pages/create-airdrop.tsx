@@ -26,6 +26,7 @@ export default function CreateAirdrop() {
   const { status, connect, account, chainId, ethereum } = useMetaMask();
   const { switchChain } = useMetaMask();
 
+  const airdropNameRef = useRef<HTMLInputElement>(null);
   const airdropTokenAddressRef = useRef<HTMLInputElement>(null);
   const airdropTokenAmountRef = useRef<HTMLInputElement>(null);
   const snapshotTokenAddress1Ref = useRef<HTMLInputElement>(null);
@@ -35,6 +36,7 @@ export default function CreateAirdrop() {
   const snapshotBlockNumberRef = useRef<HTMLInputElement>(null);
   const excludedAddressListRef = useRef<HTMLInputElement>(null);
 
+  const [airdropNameValue, setAirdropNameValue] = useState("");
   const [airdropTokenAddressValue, setAirdropTokenAddressValue] = useState("");
   const [airdropTokenAmountValue, setAirdropTokenAmountValue] = useState("");
   const [snapshotTokenAddress1Value, setSnapshotTokenAddress1Value] =
@@ -48,6 +50,7 @@ export default function CreateAirdrop() {
   const [snapshotBlockNumberValue, setSnapshotBlockNumberValue] = useState("");
   const [excludedAddressListValue, setExcludedAddressListValue] = useState("");
 
+  const [airdropNameError, setAirdropNameError] = useState(false);
   const [airdropTokenAddressError, setAirdropTokenAddressError] =
     useState(false);
   const [airdropTokenAmountError, setAirdropTokenAmountError] = useState(false);
@@ -91,15 +94,15 @@ export default function CreateAirdrop() {
     };
 
     const networks: Networks = {
-      mainnet: "0x1", // 1
+      eth_mainnet: "0x1", // 1
       // Test nets
-      goerli: "0x5", // 5
+      eth_goerli: "0x5", // 5
       // Layers 2
-      arbitrum: "0xa4b1", // 42161
-      optimism: "0xa", // 10
+      // arbitrum: "0xa4b1", // 42161
+      // optimism: "0xa", // 10
       // Side chains
-      polygon: "0x89", // 137
-      mumbai: "0x13881", // 80001
+      polygon_mainnet: "0x89", // 137
+      polygon_mumbai: "0x13881", // 80001
     };
 
     const getKeyByValue = useCallback(
@@ -254,7 +257,17 @@ export default function CreateAirdrop() {
   const formValidation = (): boolean => {
     let valid = true;
 
-    let v = airdropTokenAddressRef?.current;
+    let v = airdropNameRef?.current;
+    if (v) {
+      v.setCustomValidity("");
+      let ok = v.validity.valid;
+      setAirdropNameError(!ok);
+      if (!ok) {
+        v.setCustomValidity("name is not valid");
+      }
+      valid &&= ok;
+    }
+    v = airdropTokenAddressRef?.current;
     if (v) {
       v.setCustomValidity("");
       let ok = v.validity.valid;
@@ -502,6 +515,27 @@ export default function CreateAirdrop() {
                     width: 0.6,
                   }}
                 >
+                  <Typography
+                    sx={{
+                      m: 2,
+                    }}
+                  >
+                    Airdrop Name
+                  </Typography>
+                  <TextField
+                    id="airdrop-name"
+                    variant="outlined"
+                    required
+                    onChange={(e: OnChangeEvent) =>
+                      setAirdropNameValue(e.target.value)
+                    }
+                    inputRef={airdropNameRef}
+                    error={airdropNameError}
+                    helperText={
+                      airdropNameError &&
+                      airdropNameRef?.current?.validationMessage
+                    }
+                  />
                   <Typography
                     sx={{
                       m: 2,
