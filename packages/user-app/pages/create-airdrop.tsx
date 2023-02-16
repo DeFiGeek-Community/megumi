@@ -29,6 +29,7 @@ export default function CreateAirdrop() {
   const airdropNameRef = useRef<HTMLInputElement>(null);
   const airdropTokenAddressRef = useRef<HTMLInputElement>(null);
   const airdropTokenAmountRef = useRef<HTMLInputElement>(null);
+  const initialDepositAmountRef = useRef<HTMLInputElement>(null);
   const snapshotTokenAddress1Ref = useRef<HTMLInputElement>(null);
   const snapshotTokenAddress2Ref = useRef<HTMLInputElement>(null);
   const snapshotTokenCoefficient1Ref = useRef<HTMLInputElement>(null);
@@ -39,6 +40,8 @@ export default function CreateAirdrop() {
   const [airdropNameValue, setAirdropNameValue] = useState("");
   const [airdropTokenAddressValue, setAirdropTokenAddressValue] = useState("");
   const [airdropTokenAmountValue, setAirdropTokenAmountValue] = useState("");
+  const [initialDepositAmountValue, setInitialDepositAmountValue] =
+    useState("0");
   const [snapshotTokenAddress1Value, setSnapshotTokenAddress1Value] =
     useState("");
   const [snapshotTokenAddress2Value, setSnapshotTokenAddress2Value] =
@@ -54,6 +57,8 @@ export default function CreateAirdrop() {
   const [airdropTokenAddressError, setAirdropTokenAddressError] =
     useState(false);
   const [airdropTokenAmountError, setAirdropTokenAmountError] = useState(false);
+  const [initialDepositAmountError, setInitialDepositAmountError] =
+    useState(false);
   const [snapshotTokenAddress1Error, setSnapshotTokenAddress1Error] =
     useState(false);
   const [snapshotTokenAddress2Error, setSnapshotTokenAddress2Error] =
@@ -284,6 +289,17 @@ export default function CreateAirdrop() {
       let ok = v.validity.valid;
       ok &&= Number.isInteger(+v.value);
       setAirdropTokenAmountError(!ok);
+      if (!ok) {
+        v.setCustomValidity("amount is only integer");
+      }
+      valid &&= ok;
+    }
+    v = initialDepositAmountRef?.current;
+    if (v) {
+      v.setCustomValidity("");
+      let ok = v.validity.valid;
+      ok &&= Number.isInteger(+v.value);
+      setInitialDepositAmountError(!ok);
       if (!ok) {
         v.setCustomValidity("amount is only integer");
       }
@@ -576,6 +592,28 @@ export default function CreateAirdrop() {
                     helperText={
                       airdropTokenAmountError &&
                       airdropTokenAmountRef?.current?.validationMessage
+                    }
+                  />
+                  <Typography
+                    sx={{
+                      m: 2,
+                    }}
+                  >
+                    Initial Deposit Amount
+                  </Typography>
+                  <TextField
+                    id="initial-deposit-amount"
+                    variant="outlined"
+                    required
+                    defaultValue="0"
+                    onChange={(e: OnChangeEvent) =>
+                      setInitialDepositAmountValue(e.target.value)
+                    }
+                    inputRef={initialDepositAmountRef}
+                    error={initialDepositAmountError}
+                    helperText={
+                      initialDepositAmountError &&
+                      initialDepositAmountRef?.current?.validationMessage
                     }
                   />
                   <Typography
