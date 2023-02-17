@@ -519,7 +519,6 @@ export default function CreateAirdrop() {
             <Stack>
               <Box
                 sx={{
-                  p: 1,
                   m: 2,
                   display: "flex",
                   justifyContent: "center",
@@ -531,140 +530,36 @@ export default function CreateAirdrop() {
                     width: 0.6,
                   }}
                 >
-                  <Typography
-                    sx={{
-                      m: 2,
-                    }}
-                  >
-                    Airdrop Name
-                  </Typography>
-                  <TextField
-                    id="airdrop-name"
-                    variant="outlined"
-                    required
-                    onChange={(e: OnChangeEvent) =>
-                      setAirdropNameValue(e.target.value)
-                    }
-                    inputRef={airdropNameRef}
-                    error={airdropNameError}
-                    helperText={
-                      airdropNameError &&
-                      airdropNameRef?.current?.validationMessage
-                    }
-                  />
-                  <Typography
-                    sx={{
-                      m: 2,
-                    }}
-                  >
-                    Airdrop Token Address
-                  </Typography>
-                  <TextField
-                    id="airdrop-token-address"
-                    variant="outlined"
-                    required
-                    onChange={(e: OnChangeEvent) =>
-                      setAirdropTokenAddressValue(e.target.value)
-                    }
-                    inputRef={airdropTokenAddressRef}
-                    error={airdropTokenAddressError}
-                    helperText={
-                      airdropTokenAddressError &&
-                      airdropTokenAddressRef?.current?.validationMessage
-                    }
-                  />
-                  <Typography
-                    sx={{
-                      m: 2,
-                    }}
-                  >
-                    Airdrop Token Amount
-                  </Typography>
-                  <TextField
-                    id="airdrop-token-amount"
-                    variant="outlined"
-                    required
-                    onChange={(e: OnChangeEvent) =>
-                      setAirdropTokenAmountValue(e.target.value)
-                    }
-                    inputRef={airdropTokenAmountRef}
-                    error={airdropTokenAmountError}
-                    helperText={
-                      airdropTokenAmountError &&
-                      airdropTokenAmountRef?.current?.validationMessage
-                    }
-                  />
-                  <Typography
-                    sx={{
-                      m: 2,
-                    }}
-                  >
-                    Initial Deposit Amount
-                  </Typography>
-                  <TextField
-                    id="initial-deposit-amount"
-                    variant="outlined"
-                    required
-                    defaultValue="0"
-                    onChange={(e: OnChangeEvent) =>
-                      setInitialDepositAmountValue(e.target.value)
-                    }
-                    inputRef={initialDepositAmountRef}
-                    error={initialDepositAmountError}
-                    helperText={
-                      initialDepositAmountError &&
-                      initialDepositAmountRef?.current?.validationMessage
-                    }
-                  />
-                  <Typography
-                    sx={{
-                      m: 2,
-                    }}
-                  >
-                    Snapshot Token Address
-                  </Typography>
                   <Grid
                     container
                     sx={{
-                      mt: 1,
+                      m: 2,
                     }}
                     columnSpacing={{ xs: 2 }}
                   >
-                    <Grid item xs={8}>
-                      <TextField
-                        fullWidth
-                        label="address"
-                        id="snapshot-token-address-1"
-                        variant="outlined"
-                        required
-                        onChange={(e: OnChangeEvent) =>
-                          setSnapshotTokenAddress1Value(e.target.value)
-                        }
-                        inputRef={snapshotTokenAddress1Ref}
-                        error={snapshotTokenAddress1Error}
-                        helperText={
-                          snapshotTokenAddress1Error &&
-                          snapshotTokenAddress1Ref?.current?.validationMessage
-                        }
-                      />
+                    <Grid item xs={3}>
+                      <Typography
+                        sx={{
+                          m: 2,
+                        }}
+                      >
+                        Airdrop Name
+                      </Typography>
                     </Grid>
-                    <Grid item xs={4}>
+                    <Grid item xs={6}>
                       <TextField
                         fullWidth
-                        label="coefficient"
-                        id="snapshot-token-coefficient-1"
+                        id="airdrop-name"
                         variant="outlined"
                         required
-                        defaultValue="1"
                         onChange={(e: OnChangeEvent) =>
-                          setSnapshotTokenCoefficient1Value(e.target.value)
+                          setAirdropNameValue(e.target.value)
                         }
-                        inputRef={snapshotTokenCoefficient1Ref}
-                        error={snapshotTokenCoefficient1Error}
+                        inputRef={airdropNameRef}
+                        error={airdropNameError}
                         helperText={
-                          snapshotTokenCoefficient1Error &&
-                          snapshotTokenCoefficient1Ref?.current
-                            ?.validationMessage
+                          airdropNameError &&
+                          airdropNameRef?.current?.validationMessage
                         }
                       />
                     </Grid>
@@ -672,71 +567,259 @@ export default function CreateAirdrop() {
                   <Grid
                     container
                     sx={{
-                      mt: 1,
+                      m: 2,
                     }}
                     columnSpacing={{ xs: 2 }}
                   >
-                    <Grid item xs={8}>
-                      <TextField
-                        fullWidth
-                        label="address"
-                        id="snapshot-token-address-2"
-                        variant="outlined"
-                        onChange={(e: OnChangeEvent) =>
-                          setSnapshotTokenAddress2Value(e.target.value)
-                        }
-                        inputRef={snapshotTokenAddress2Ref}
-                        error={snapshotTokenAddress2Error}
-                        helperText={
-                          snapshotTokenAddress2Error &&
-                          snapshotTokenAddress2Ref?.current?.validationMessage
-                        }
-                      />
+                    <Grid item xs={3}>
+                      <Typography
+                        sx={{
+                          m: 2,
+                        }}
+                      >
+                        Airdrop Token Address
+                      </Typography>
                     </Grid>
-                    <Grid item xs={4}>
+                    <Grid item xs={6}>
                       <TextField
                         fullWidth
-                        label="coefficient"
-                        id="snapshot-token-coefficient-2"
+                        id="airdrop-token-address"
                         variant="outlined"
-                        defaultValue="1"
+                        required
                         onChange={(e: OnChangeEvent) =>
-                          setSnapshotTokenCoefficient2Value(e.target.value)
+                          setAirdropTokenAddressValue(e.target.value)
                         }
-                        inputRef={snapshotTokenCoefficient2Ref}
-                        error={snapshotTokenCoefficient2Error}
+                        inputRef={airdropTokenAddressRef}
+                        error={airdropTokenAddressError}
                         helperText={
-                          snapshotTokenCoefficient2Error &&
-                          snapshotTokenCoefficient2Ref?.current
-                            ?.validationMessage
+                          airdropTokenAddressError &&
+                          airdropTokenAddressRef?.current?.validationMessage
                         }
                       />
                     </Grid>
                   </Grid>
-                  <Typography
+                  <Grid
+                    container
                     sx={{
                       m: 2,
                     }}
+                    columnSpacing={{ xs: 2 }}
                   >
-                    Snapshot Block Number
-                  </Typography>
-                  <TextField
-                    id="snapshot-block-number"
-                    variant="outlined"
-                    required
+                    <Grid item xs={3}>
+                      <Typography
+                        sx={{
+                          m: 2,
+                        }}
+                      >
+                        Airdrop Token Amount
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={6}>
+                      <TextField
+                        fullWidth
+                        id="airdrop-token-amount"
+                        variant="outlined"
+                        required
+                        inputProps={{ style: { textAlign: "right" } }}
+                        onChange={(e: OnChangeEvent) =>
+                          setAirdropTokenAmountValue(e.target.value)
+                        }
+                        inputRef={airdropTokenAmountRef}
+                        error={airdropTokenAmountError}
+                        helperText={
+                          airdropTokenAmountError &&
+                          airdropTokenAmountRef?.current?.validationMessage
+                        }
+                      />
+                    </Grid>
+                  </Grid>
+                  <Grid
+                    container
                     sx={{
-                      width: 0.2,
+                      m: 2,
                     }}
-                    onChange={(e: OnChangeEvent) =>
-                      setSnapshotBlockNumberValue(e.target.value)
-                    }
-                    inputRef={snapshotBlockNumberRef}
-                    error={snapshotBlockNumberError}
-                    helperText={
-                      snapshotBlockNumberError &&
-                      snapshotBlockNumberRef?.current?.validationMessage
-                    }
-                  />
+                    columnSpacing={{ xs: 2 }}
+                  >
+                    <Grid item xs={3}>
+                      <Typography
+                        sx={{
+                          m: 2,
+                        }}
+                      >
+                        Initial Deposit Amount
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={6}>
+                      <TextField
+                        fullWidth
+                        id="initial-deposit-amount"
+                        variant="outlined"
+                        required
+                        inputProps={{ style: { textAlign: "right" } }}
+                        defaultValue="0"
+                        onChange={(e: OnChangeEvent) =>
+                          setInitialDepositAmountValue(e.target.value)
+                        }
+                        inputRef={initialDepositAmountRef}
+                        error={initialDepositAmountError}
+                        helperText={
+                          initialDepositAmountError &&
+                          initialDepositAmountRef?.current?.validationMessage
+                        }
+                      />
+                    </Grid>
+                  </Grid>
+                  <Grid
+                    container
+                    sx={{
+                      m: 2,
+                    }}
+                    columnSpacing={{ xs: 2 }}
+                  >
+                    <Grid item xs={3}>
+                      <Typography
+                        sx={{
+                          m: 2,
+                        }}
+                      >
+                        Snapshot Block Number
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={6}>
+                      <TextField
+                        id="snapshot-block-number"
+                        variant="outlined"
+                        required
+                        inputProps={{ style: { textAlign: "right" } }}
+                        sx={{
+                          width: 0.5,
+                        }}
+                        onChange={(e: OnChangeEvent) =>
+                          setSnapshotBlockNumberValue(e.target.value)
+                        }
+                        inputRef={snapshotBlockNumberRef}
+                        error={snapshotBlockNumberError}
+                        helperText={
+                          snapshotBlockNumberError &&
+                          snapshotBlockNumberRef?.current?.validationMessage
+                        }
+                      />
+                    </Grid>
+                  </Grid>
+                  <Grid
+                    container
+                    sx={{
+                      m: 2,
+                    }}
+                    columnSpacing={{ xs: 1 }}
+                  >
+                    <Grid item xs={3}>
+                      <Typography
+                        sx={{
+                          m: 2,
+                        }}
+                      >
+                        Snapshot Token Address
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={9}>
+                      <Grid
+                        container
+                        sx={{
+                          m: 1,
+                        }}
+                        columnSpacing={{ xs: 1 }}
+                      >
+                        <Grid item xs={6}>
+                          <TextField
+                            fullWidth
+                            label="address"
+                            id="snapshot-token-address-1"
+                            variant="outlined"
+                            required
+                            onChange={(e: OnChangeEvent) =>
+                              setSnapshotTokenAddress1Value(e.target.value)
+                            }
+                            inputRef={snapshotTokenAddress1Ref}
+                            error={snapshotTokenAddress1Error}
+                            helperText={
+                              snapshotTokenAddress1Error &&
+                              snapshotTokenAddress1Ref?.current
+                                ?.validationMessage
+                            }
+                          />
+                        </Grid>
+                        <Grid item xs={2}>
+                          <TextField
+                            fullWidth
+                            label="coefficient"
+                            id="snapshot-token-coefficient-1"
+                            variant="outlined"
+                            required
+                            inputProps={{ style: { textAlign: "right" } }}
+                            defaultValue="1"
+                            onChange={(e: OnChangeEvent) =>
+                              setSnapshotTokenCoefficient1Value(e.target.value)
+                            }
+                            inputRef={snapshotTokenCoefficient1Ref}
+                            error={snapshotTokenCoefficient1Error}
+                            helperText={
+                              snapshotTokenCoefficient1Error &&
+                              snapshotTokenCoefficient1Ref?.current
+                                ?.validationMessage
+                            }
+                          />
+                        </Grid>
+                      </Grid>
+                      <Grid
+                        container
+                        sx={{
+                          m: 1,
+                        }}
+                        columnSpacing={{ xs: 1 }}
+                      >
+                        <Grid item xs={6}>
+                          <TextField
+                            fullWidth
+                            label="address"
+                            id="snapshot-token-address-2"
+                            variant="outlined"
+                            onChange={(e: OnChangeEvent) =>
+                              setSnapshotTokenAddress2Value(e.target.value)
+                            }
+                            inputRef={snapshotTokenAddress2Ref}
+                            error={snapshotTokenAddress2Error}
+                            helperText={
+                              snapshotTokenAddress2Error &&
+                              snapshotTokenAddress2Ref?.current
+                                ?.validationMessage
+                            }
+                          />
+                        </Grid>
+                        <Grid item xs={2}>
+                          <TextField
+                            fullWidth
+                            label="coefficient"
+                            id="snapshot-token-coefficient-2"
+                            variant="outlined"
+                            inputProps={{ style: { textAlign: "right" } }}
+                            defaultValue="1"
+                            onChange={(e: OnChangeEvent) =>
+                              setSnapshotTokenCoefficient2Value(e.target.value)
+                            }
+                            inputRef={snapshotTokenCoefficient2Ref}
+                            error={snapshotTokenCoefficient2Error}
+                            helperText={
+                              snapshotTokenCoefficient2Error &&
+                              snapshotTokenCoefficient2Ref?.current
+                                ?.validationMessage
+                            }
+                          />
+                        </Grid>
+                      </Grid>
+                    </Grid>
+                  </Grid>
+
                   <Typography
                     sx={{
                       m: 2,
@@ -748,6 +831,9 @@ export default function CreateAirdrop() {
                     id="excluded-address-list"
                     variant="outlined"
                     multiline
+                    sx={{
+                      width: 0.5,
+                    }}
                     onChange={(e: OnChangeEvent) =>
                       setExcludedAddressListValue(e.target.value)
                     }
