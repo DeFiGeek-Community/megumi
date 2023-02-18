@@ -1,5 +1,5 @@
 {
-  "name": "contract",
+  "name": "@merkle-airdrop-tool/contract",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",

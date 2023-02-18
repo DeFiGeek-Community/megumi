@@ -19,6 +19,7 @@ import Typography from "@mui/material/Typography";
 import Head from "next/head";
 import { useCallback, useRef, useState } from "react";
 import { BigNumber, ethers, providers } from "ethers";
+import { merkleAirdropAbi } from "@merkle-airdrop-tool/contract/exports/MerkleAirdrop";
 
 type OnChangeEvent = React.ChangeEvent<HTMLInputElement>;
 
