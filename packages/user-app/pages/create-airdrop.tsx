@@ -18,12 +18,12 @@ import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import Head from "next/head";
 import { useCallback, useRef, useState } from "react";
-import { BigNumber, ethers } from "ethers";
+import { BigNumber, ethers, providers } from "ethers";
 
 type OnChangeEvent = React.ChangeEvent<HTMLInputElement>;
 
 export default function CreateAirdrop() {
-  const { status, connect, account, chainId, ethereum } = useMetaMask();
+  const { status, connect, account, chainId } = useMetaMask();
   const { switchChain } = useMetaMask();
 
   const airdropNameRef = useRef<HTMLInputElement>(null);
@@ -386,7 +386,7 @@ export default function CreateAirdrop() {
     snapshotAmount: { [address: string]: BigNumber },
     ttlSnapshotAmount: BigNumber,
     snapshotTokenAddress: string,
-    coefficient: string
+    coefficient: BigNumber
   ): Promise<[{ [address: string]: BigNumber }, BigNumber]> => {
     const BASE_URL = "https://api.covalenthq.com/v1/1/";
     const TOKEN_HOLDERS_URL = "/token_holders/?";
@@ -415,13 +415,12 @@ export default function CreateAirdrop() {
           if (excludedAddressListValue.includes(data.address)) {
             return;
           }
-          const parsedAmount = BigNumber.from(data.balance).mul(
-            BigNumber.from(coefficient)
-          );
+          const parsedAmount = BigNumber.from(data.balance).mul(coefficient);
           if (snapshotAmount[data.address] == undefined) {
             snapshotAmount[data.address] = parsedAmount;
           } else {
-            snapshotAmount[data.address].add(parsedAmount);
+            snapshotAmount[data.address] =
+              snapshotAmount[data.address].add(parsedAmount);
           }
           ttlSnapshotAmount = ttlSnapshotAmount.add(parsedAmount);
         });
@@ -441,31 +440,81 @@ export default function CreateAirdrop() {
   };
 
   const generateAirdropList = async () => {
+    if (chainId == null) {
+      return;
+    }
     let snapshotAmountDict: { [address: string]: BigNumber } = {};
+    let resSnapshotAmount: { [address: string]: BigNumber } = {};
     let airdropAmountDict: { [address: string]: BigNumber } = {};
     let ttlSnapshotAmount = BigNumber.from(0);
+    let resTtlSnapshotAmount = BigNumber.from(0);
     let ttlAirdropAmount = BigNumber.from(0);
     let airdropAmount = BigNumber.from(airdropTokenAmountValue);
-
-    let [resSnapshotAmount, resTtlSnapshotAmount] = await extractTokenBalance(
-      snapshotAmountDict,
-      ttlSnapshotAmount,
-      snapshotTokenAddress1Value,
+    let snapshotTokenCoefficient1 = BigNumber.from(
       snapshotTokenCoefficient1Value
     );
-    snapshotAmountDict = resSnapshotAmount;
-    ttlSnapshotAmount = resTtlSnapshotAmount;
-
+    let snapshotTokenCoefficient2 = BigNumber.from(
+      snapshotTokenCoefficient2Value
+    );
     if (snapshotTokenAddress2Value !== "") {
+      const decimalsAbi = [
+        {
+          constant: true,
+          inputs: [],
+          name: "decimals",
+          outputs: [{ name: "", type: "uint8" }],
+          payable: false,
+          stateMutability: "view",
+          type: "function",
+        },
+      ];
+      const provider = new ethers.providers.InfuraProvider(
+        BigNumber.from(chainId).toNumber(),
+        "95aca8d1bee4424da5c613d59a0f43e6"
+      );
+
+      let tokenContract = new ethers.Contract(
+        snapshotTokenAddress1Value,
+        decimalsAbi,
+        provider
+      );
+      const decimals1 = await tokenContract.decimals();
+
+      tokenContract = new ethers.Contract(
+        snapshotTokenAddress2Value,
+        decimalsAbi,
+        provider
+      );
+      const decimals2 = await tokenContract.decimals();
+
+      if (decimals1 > decimals2) {
+        snapshotTokenCoefficient2 = snapshotTokenCoefficient2.mul(
+          BigNumber.from(10).pow(decimals1 - decimals2)
+        );
+      } else if (decimals2 > decimals1) {
+        snapshotTokenCoefficient1 = snapshotTokenCoefficient1.mul(
+          BigNumber.from(10).pow(decimals2 - decimals1)
+        );
+      }
+
       [resSnapshotAmount, resTtlSnapshotAmount] = await extractTokenBalance(
         snapshotAmountDict,
         ttlSnapshotAmount,
         snapshotTokenAddress2Value,
-        snapshotTokenCoefficient2Value
+        snapshotTokenCoefficient2
       );
       snapshotAmountDict = resSnapshotAmount;
       ttlSnapshotAmount = resTtlSnapshotAmount;
     }
+
+    [resSnapshotAmount, resTtlSnapshotAmount] = await extractTokenBalance(
+      snapshotAmountDict,
+      ttlSnapshotAmount,
+      snapshotTokenAddress1Value,
+      snapshotTokenCoefficient1
+    );
+    snapshotAmountDict = resSnapshotAmount;
+    ttlSnapshotAmount = resTtlSnapshotAmount;
 
     let snapshotAmountList = Object.entries(snapshotAmountDict).sort(
       (p1, p2) => {
