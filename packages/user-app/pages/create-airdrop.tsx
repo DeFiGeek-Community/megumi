@@ -74,6 +74,7 @@ export default function CreateAirdrop() {
 
   const [snapshotList, setSnaphshotList] = useState<[string, BigNumber][]>([]);
   const [airdropList, setAirdropList] = useState<[string, BigNumber][]>([]);
+  const [ttlAirdropAmount, setTtlAirdropAmount] = useState("");
 
   function shortenAddress(address: string | null) {
     if (address === null) {
@@ -106,8 +107,8 @@ export default function CreateAirdrop() {
       // arbitrum: "0xa4b1", // 42161
       // optimism: "0xa", // 10
       // Side chains
-      polygon_mainnet: "0x89", // 137
-      polygon_mumbai: "0x13881", // 80001
+      // polygon_mainnet: "0x89", // 137
+      // polygon_mumbai: "0x13881", // 80001
     };
 
     const getKeyByValue = useCallback(
@@ -197,64 +198,140 @@ export default function CreateAirdrop() {
   function AirdropcalculatedList() {
     return (
       <>
-        <TableContainer
-          sx={{
-            m: 1,
-            width: 0.4,
-            height: 500,
-          }}
-        >
-          <Table aria-label="simple table" stickyHeader>
-            <TableHead>
-              <TableRow>
-                <TableCell colSpan={2}>Snapshot Amount</TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell>Address</TableCell>
-                <TableCell align="right">Amount</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {snapshotList.map((elm, index) => (
-                <TableRow key={index}>
-                  <TableCell component="th" scope="row">
-                    {elm[0]}
-                  </TableCell>
-                  <TableCell align="right">{elm[1].toString()}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-        <TableContainer
-          sx={{
-            m: 1,
-            width: 0.4,
-            height: 500,
-          }}
-        >
-          <Table aria-label="simple table" stickyHeader>
-            <TableHead>
-              <TableRow>
-                <TableCell colSpan={2}>Airdrop Amount</TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell>Address</TableCell>
-                <TableCell align="right">Amount</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {airdropList.map((elm, index) => (
-                <TableRow key={index}>
-                  <TableCell component="th" scope="row">
-                    {elm[0]}
-                  </TableCell>
-                  <TableCell align="right">{elm[1].toString()}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
+        {JSON.stringify(airdropList) !== "[]" ? (
+          <Box sx={{ width: 0.7 }}>
+            <Stack>
+              <Box sx={{ display: "flex", justifyContent: "center" }}>
+                <TableContainer
+                  sx={{
+                    m: 2,
+                    width: 0.4,
+                    height: 500,
+                  }}
+                >
+                  <Table aria-label="simple table" stickyHeader>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell colSpan={2}>Snapshot Amount</TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell>Address</TableCell>
+                        <TableCell align="right">Amount</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {snapshotList.map((elm, index) => (
+                        <TableRow key={index}>
+                          <TableCell component="th" scope="row">
+                            {elm[0]}
+                          </TableCell>
+                          <TableCell align="right">
+                            {elm[1].toString()}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+                <TableContainer
+                  sx={{
+                    m: 2,
+                    width: 0.4,
+                    height: 500,
+                  }}
+                >
+                  <Table aria-label="simple table" stickyHeader>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell colSpan={2}>Airdrop Amount</TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell>Address</TableCell>
+                        <TableCell align="right">Amount</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {airdropList.map((elm, index) => (
+                        <TableRow key={index}>
+                          <TableCell component="th" scope="row">
+                            {elm[0]}
+                          </TableCell>
+                          <TableCell align="right">
+                            {elm[1].toString()}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </Box>
+              <Typography
+                sx={{
+                  m: 2,
+                }}
+              >
+                Calcurated Total Airdrop Amount : {ttlAirdropAmount}
+              </Typography>
+              <Grid
+                container
+                sx={{
+                  m: 2,
+                }}
+                columnSpacing={{ xs: 2 }}
+              >
+                <Grid item xs={3}>
+                  <Typography
+                    sx={{
+                      m: 2,
+                    }}
+                  >
+                    Initial Deposit Amount
+                  </Typography>
+                </Grid>
+                <Grid item xs={6}>
+                  <TextField
+                    fullWidth
+                    id="initial-deposit-amount"
+                    variant="outlined"
+                    required
+                    inputProps={{ style: { textAlign: "right" } }}
+                    defaultValue={initialDepositAmountValue}
+                    onChange={(e: OnChangeEvent) =>
+                      setInitialDepositAmountValue(e.target.value)
+                    }
+                    inputRef={initialDepositAmountRef}
+                    error={initialDepositAmountError}
+                    helperText={
+                      initialDepositAmountError &&
+                      initialDepositAmountRef?.current?.validationMessage
+                    }
+                  />
+                </Grid>
+              </Grid>
+              <Box
+                sx={{
+                  p: 1,
+                  m: 2,
+                  display: "flex",
+                  justifyContent: "center",
+                }}
+              >
+                <Button
+                  variant="contained"
+                  onClick={() => {
+                    if (formValidation()) {
+                      generateAirdropList();
+                    }
+                  }}
+                >
+                  Deploy Airdrop Information
+                </Button>
+              </Box>
+            </Stack>
+          </Box>
+        ) : (
+          <></>
+        )}
       </>
     );
   }
@@ -435,7 +512,6 @@ export default function CreateAirdrop() {
         return [snapshotAmount, ttlSnapshotAmount];
       }
     }
-
     return [snapshotAmount, ttlSnapshotAmount];
   };
 
@@ -468,7 +544,7 @@ export default function CreateAirdrop() {
           type: "function",
         },
       ];
-      const provider = new ethers.providers.InfuraProvider(
+      const provider = new providers.InfuraProvider(
         BigNumber.from(chainId).toNumber(),
         "95aca8d1bee4424da5c613d59a0f43e6"
       );
@@ -534,9 +610,12 @@ export default function CreateAirdrop() {
 
     snapshotAmountList.map((elm) => {
       let calculatedAmount = airdropAmount.mul(elm[1]).div(ttlSnapshotAmount);
-      ttlAirdropAmount.add(calculatedAmount);
+      ttlAirdropAmount = ttlAirdropAmount.add(calculatedAmount);
       airdropAmountDict[elm[0]] = calculatedAmount;
     });
+
+    setTtlAirdropAmount(ttlAirdropAmount.toString());
+    setInitialDepositAmountValue(ttlAirdropAmount.toString());
 
     let airdropAmountList = Object.entries(airdropAmountDict).sort((p1, p2) => {
       let p1Key = p1[0];
@@ -601,6 +680,7 @@ export default function CreateAirdrop() {
                         id="airdrop-name"
                         variant="outlined"
                         required
+                        defaultValue={airdropNameValue}
                         onChange={(e: OnChangeEvent) =>
                           setAirdropNameValue(e.target.value)
                         }
@@ -635,6 +715,7 @@ export default function CreateAirdrop() {
                         id="airdrop-token-address"
                         variant="outlined"
                         required
+                        defaultValue={airdropTokenAddressValue}
                         onChange={(e: OnChangeEvent) =>
                           setAirdropTokenAddressValue(e.target.value)
                         }
@@ -669,6 +750,7 @@ export default function CreateAirdrop() {
                         id="airdrop-token-amount"
                         variant="outlined"
                         required
+                        defaultValue={airdropTokenAmountValue}
                         inputProps={{ style: { textAlign: "right" } }}
                         onChange={(e: OnChangeEvent) =>
                           setAirdropTokenAmountValue(e.target.value)
@@ -695,42 +777,6 @@ export default function CreateAirdrop() {
                           m: 2,
                         }}
                       >
-                        Initial Deposit Amount
-                      </Typography>
-                    </Grid>
-                    <Grid item xs={6}>
-                      <TextField
-                        fullWidth
-                        id="initial-deposit-amount"
-                        variant="outlined"
-                        required
-                        inputProps={{ style: { textAlign: "right" } }}
-                        defaultValue="0"
-                        onChange={(e: OnChangeEvent) =>
-                          setInitialDepositAmountValue(e.target.value)
-                        }
-                        inputRef={initialDepositAmountRef}
-                        error={initialDepositAmountError}
-                        helperText={
-                          initialDepositAmountError &&
-                          initialDepositAmountRef?.current?.validationMessage
-                        }
-                      />
-                    </Grid>
-                  </Grid>
-                  <Grid
-                    container
-                    sx={{
-                      m: 2,
-                    }}
-                    columnSpacing={{ xs: 2 }}
-                  >
-                    <Grid item xs={3}>
-                      <Typography
-                        sx={{
-                          m: 2,
-                        }}
-                      >
                         Snapshot Block Number
                       </Typography>
                     </Grid>
@@ -739,6 +785,7 @@ export default function CreateAirdrop() {
                         id="snapshot-block-number"
                         variant="outlined"
                         required
+                        defaultValue={snapshotBlockNumberValue}
                         inputProps={{ style: { textAlign: "right" } }}
                         sx={{
                           width: 0.5,
@@ -786,6 +833,7 @@ export default function CreateAirdrop() {
                             id="snapshot-token-address-1"
                             variant="outlined"
                             required
+                            defaultValue={snapshotTokenAddress1Value}
                             onChange={(e: OnChangeEvent) =>
                               setSnapshotTokenAddress1Value(e.target.value)
                             }
@@ -805,8 +853,8 @@ export default function CreateAirdrop() {
                             id="snapshot-token-coefficient-1"
                             variant="outlined"
                             required
+                            defaultValue={snapshotTokenCoefficient1Value}
                             inputProps={{ style: { textAlign: "right" } }}
-                            defaultValue="1"
                             onChange={(e: OnChangeEvent) =>
                               setSnapshotTokenCoefficient1Value(e.target.value)
                             }
@@ -833,6 +881,7 @@ export default function CreateAirdrop() {
                             label="address"
                             id="snapshot-token-address-2"
                             variant="outlined"
+                            defaultValue={snapshotTokenAddress2Value}
                             onChange={(e: OnChangeEvent) =>
                               setSnapshotTokenAddress2Value(e.target.value)
                             }
@@ -852,7 +901,7 @@ export default function CreateAirdrop() {
                             id="snapshot-token-coefficient-2"
                             variant="outlined"
                             inputProps={{ style: { textAlign: "right" } }}
-                            defaultValue="1"
+                            defaultValue={snapshotTokenCoefficient2Value}
                             onChange={(e: OnChangeEvent) =>
                               setSnapshotTokenCoefficient2Value(e.target.value)
                             }
@@ -883,6 +932,7 @@ export default function CreateAirdrop() {
                     sx={{
                       width: 0.5,
                     }}
+                    defaultValue={excludedAddressListValue}
                     onChange={(e: OnChangeEvent) =>
                       setExcludedAddressListValue(e.target.value)
                     }
