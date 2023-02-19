@@ -20,8 +20,7 @@ import Head from "next/head";
 import { useCallback, useRef, useState } from "react";
 import { BigNumber, ethers, providers } from "ethers";
 import { merkleAirdropAbi } from "@merkle-airdrop-tool/contract/exports/MerkleAirdrop";
-
-type OnChangeEvent = React.ChangeEvent<HTMLInputElement>;
+import { parseBalanceMap } from "../src/parse-balance-map";
 
 export default function CreateAirdrop() {
   const { status, connect, account, chainId } = useMetaMask();
@@ -74,7 +73,9 @@ export default function CreateAirdrop() {
     useState(false);
 
   const [snapshotList, setSnaphshotList] = useState<[string, BigNumber][]>([]);
-  const [airdropList, setAirdropList] = useState<[string, BigNumber][]>([]);
+  const [airdropList, setAirdropList] = useState<
+    { address: string; amount: BigNumber }[]
+  >([]);
   const [ttlAirdropAmount, setTtlAirdropAmount] = useState("");
 
   function shortenAddress(address: string | null) {
@@ -255,10 +256,10 @@ export default function CreateAirdrop() {
                       {airdropList.map((elm, index) => (
                         <TableRow key={index}>
                           <TableCell component="th" scope="row">
-                            {elm[0]}
+                            {elm.address}
                           </TableCell>
                           <TableCell align="right">
-                            {elm[1].toString()}
+                            {elm.amount.toString()}
                           </TableCell>
                         </TableRow>
                       ))}
@@ -321,7 +322,7 @@ export default function CreateAirdrop() {
                   variant="contained"
                   onClick={() => {
                     if (formValidation()) {
-                      generateAirdropList();
+                      deployAirdropInfo();
                     }
                   }}
                 >
@@ -466,53 +467,29 @@ export default function CreateAirdrop() {
     snapshotTokenAddress: string,
     coefficient: BigNumber
   ): Promise<[{ [address: string]: BigNumber }, BigNumber]> => {
-    const BASE_URL = "https://api.covalenthq.com/v1/1/";
-    const TOKEN_HOLDERS_URL = "/token_holders/?";
-    const COVALENT_API_KEY = process.env.COVALENT_API_KEY as string;
-    let param = new URLSearchParams({
-      key: COVALENT_API_KEY,
-      // 'block-height': snapshotBlockNumberValue,
-      "page-size": "1000",
-    });
-    let response;
-    let pageNumber = 0;
-
-    while (true) {
-      param.set("page-number", pageNumber.toString());
-      response = await fetch(
-        BASE_URL +
-          "tokens/" +
-          snapshotTokenAddress +
-          TOKEN_HOLDERS_URL +
-          param.toString()
-      );
-      if (response.ok) {
-        response = await response.json();
-        response = response.data;
-        response.items.map((data: { address: string; balance: string }) => {
-          if (excludedAddressListValue.includes(data.address)) {
-            return;
-          }
-          const parsedAmount = BigNumber.from(data.balance).mul(coefficient);
-          if (snapshotAmount[data.address] == undefined) {
-            snapshotAmount[data.address] = parsedAmount;
-          } else {
-            snapshotAmount[data.address] =
-              snapshotAmount[data.address].add(parsedAmount);
-          }
-          ttlSnapshotAmount = ttlSnapshotAmount.add(parsedAmount);
-        });
-        if (response.pagination["has_more"]) {
-          pageNumber += 1;
-        } else {
-          break;
-        }
-      } else {
-        console.error(response);
-        alert("internal error, see console");
-        return [snapshotAmount, ttlSnapshotAmount];
+    let response = await fetch(
+      "/api/token/holders?chainId=" +
+        BigNumber.from(chainId).toString() +
+        "&tokenAddress=" +
+        snapshotTokenAddress +
+        "&blockNumber=" +
+        snapshotBlockNumberValue
+    );
+    let responseJson = (await response.json()) as holdersResponse;
+    responseJson.data.map((data: { address: string; balance: string }) => {
+      if (excludedAddressListValue.includes(data.address)) {
+        return;
       }
-    }
+      const parsedAmount = BigNumber.from(data.balance).mul(coefficient);
+      if (snapshotAmount[data.address] == undefined) {
+        snapshotAmount[data.address] = parsedAmount;
+      } else {
+        snapshotAmount[data.address] =
+          snapshotAmount[data.address].add(parsedAmount);
+      }
+      ttlSnapshotAmount = ttlSnapshotAmount.add(parsedAmount);
+    });
+
     return [snapshotAmount, ttlSnapshotAmount];
   };
 
@@ -522,7 +499,7 @@ export default function CreateAirdrop() {
     }
     let snapshotAmountDict: { [address: string]: BigNumber } = {};
     let resSnapshotAmount: { [address: string]: BigNumber } = {};
-    let airdropAmountDict: { [address: string]: BigNumber } = {};
+    let airdropAmountList: { address: string; amount: BigNumber }[] = [];
     let ttlSnapshotAmount = BigNumber.from(0);
     let resTtlSnapshotAmount = BigNumber.from(0);
     let ttlAirdropAmount = BigNumber.from(0);
@@ -534,35 +511,23 @@ export default function CreateAirdrop() {
       snapshotTokenCoefficient2Value
     );
     if (snapshotTokenAddress2Value !== "") {
-      const decimalsAbi = [
-        {
-          constant: true,
-          inputs: [],
-          name: "decimals",
-          outputs: [{ name: "", type: "uint8" }],
-          payable: false,
-          stateMutability: "view",
-          type: "function",
-        },
-      ];
-      const provider = new providers.InfuraProvider(
-        BigNumber.from(chainId).toNumber(),
-        "95aca8d1bee4424da5c613d59a0f43e6"
+      let response = await fetch(
+        "/api/token/decimal?chainId=" +
+          BigNumber.from(chainId).toString() +
+          "&tokenAddress=" +
+          snapshotTokenAddress1Value
       );
+      let responseJson = (await response.json()) as decimalResponse;
+      const decimals1 = responseJson.data;
 
-      let tokenContract = new ethers.Contract(
-        snapshotTokenAddress1Value,
-        decimalsAbi,
-        provider
+      response = await fetch(
+        "/api/token/decimal?chainId=" +
+          BigNumber.from(chainId).toString() +
+          "&tokenAddress=" +
+          snapshotTokenAddress2Value
       );
-      const decimals1 = await tokenContract.decimals();
-
-      tokenContract = new ethers.Contract(
-        snapshotTokenAddress2Value,
-        decimalsAbi,
-        provider
-      );
-      const decimals2 = await tokenContract.decimals();
+      responseJson = (await response.json()) as decimalResponse;
+      const decimals2 = responseJson.data;
 
       if (decimals1 > decimals2) {
         snapshotTokenCoefficient2 = snapshotTokenCoefficient2.mul(
@@ -612,25 +577,17 @@ export default function CreateAirdrop() {
     snapshotAmountList.map((elm) => {
       let calculatedAmount = airdropAmount.mul(elm[1]).div(ttlSnapshotAmount);
       ttlAirdropAmount = ttlAirdropAmount.add(calculatedAmount);
-      airdropAmountDict[elm[0]] = calculatedAmount;
-    });
-
-    setTtlAirdropAmount(ttlAirdropAmount.toString());
-    setInitialDepositAmountValue(ttlAirdropAmount.toString());
-
-    let airdropAmountList = Object.entries(airdropAmountDict).sort((p1, p2) => {
-      let p1Key = p1[0];
-      let p2Key = p2[0];
-      if (p1Key < p2Key) {
-        return -1;
-      }
-      if (p1Key > p2Key) {
-        return 1;
-      }
-      return 0;
+      airdropAmountList.push({ address: elm[0], amount: calculatedAmount });
     });
 
     setAirdropList(airdropAmountList);
+
+    setTtlAirdropAmount(ttlAirdropAmount.toString());
+    setInitialDepositAmountValue(ttlAirdropAmount.toString());
+  };
+
+  const deployAirdropInfo = async () => {
+    parseBalanceMap(airdropList);
   };
 
   return (
