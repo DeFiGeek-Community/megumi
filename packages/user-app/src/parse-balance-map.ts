@@ -9,7 +9,6 @@ const { isAddress, getAddress } = utils
 // and the tree has no additional distributions.
 interface MerkleDistributorInfo {
   merkleRoot: string
-  tokenTotal: string
   claims: {
     [account: string]: {
       index: number
@@ -19,35 +18,35 @@ interface MerkleDistributorInfo {
   }
 }
 
-type OldFormat = { [account: string]: number | string }
-type NewFormat = { address: string; earnings: string; }
+type Format = { [account: string]: number | string }
+type Format2 = { address: string; amount: BigNumber | string; }
 
 export function parseBalanceMap(
-  balances: OldFormat | NewFormat[]
+  balances: Format | Format2[],
 ): MerkleDistributorInfo {
-  // if balances are in an old format, process them
-  const balancesInNewFormat: NewFormat[] = Array.isArray(balances)
-    ? balances
-    : Object.keys(balances).map(
-        (account): NewFormat => ({
-          address: account,
-          earnings: balances[account].toString(),
-        })
-      )
 
-  const dataByAddress = balancesInNewFormat.reduce<{
+  const FormatToFormat2: Format2[] = Array.isArray(balances)
+  ? balances
+  : Object.keys(balances).map(
+      (account): Format2 => ({
+        address: account,
+        amount: balances[account].toString(),
+      })
+    )
+
+  const dataByAddress = FormatToFormat2.reduce<{
     [address: string]: {
       amount: BigNumber
     }
-  }>((memo, { address: account, earnings }) => {
+  }>((memo, { address: account, amount }) => {
     if (!isAddress(account)) {
       throw new Error(`Found invalid address: ${account}`)
     }
     const parsed = getAddress(account)
     if (memo[parsed]) throw new Error(`Duplicate address: ${parsed}`)
-    const parsedNum = BigNumber.from(earnings)
+    const parsedNum = BigNumber.from(amount)
     if (parsedNum.lte(0))
-      throw new Error(`Invalid amount for account: ${account}`)
+      return memo
 
     memo[parsed] = { amount: parsedNum, ...({}) }
     return memo
@@ -81,14 +80,8 @@ export function parseBalanceMap(
     return memo
   }, {})
 
-  const tokenTotal: BigNumber = sortedAddresses.reduce<BigNumber>(
-    (memo, key) => memo.add(dataByAddress[key].amount),
-    BigNumber.from(0)
-  )
-
   return {
     merkleRoot: tree.getHexRoot(),
-    tokenTotal: tokenTotal.toHexString(),
     claims,
   }
 }

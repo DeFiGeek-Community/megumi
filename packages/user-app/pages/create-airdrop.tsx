@@ -20,7 +20,6 @@ import Head from "next/head";
 import { useCallback, useRef, useState } from "react";
 import { BigNumber, ethers, providers } from "ethers";
 import { merkleAirdropAbi } from "@merkle-airdrop-tool/contract/exports/MerkleAirdrop";
-import { parseBalanceMap } from "../src/parse-balance-map";
 
 export default function CreateAirdrop() {
   const { status, connect, account, chainId } = useMetaMask();
@@ -111,6 +110,7 @@ export default function CreateAirdrop() {
       // Side chains
       // polygon_mainnet: "0x89", // 137
       // polygon_mumbai: "0x13881", // 80001
+      local: "0x7a69", // 31337
     };
 
     const getKeyByValue = useCallback(
@@ -587,7 +587,37 @@ export default function CreateAirdrop() {
   };
 
   const deployAirdropInfo = async () => {
-    parseBalanceMap(airdropList);
+    let response = await fetch(
+      "/api/token/decimal?chainId=" +
+        BigNumber.from(chainId).toString() +
+        "&tokenAddress=" +
+        airdropTokenAddressValue
+    );
+    let decimalResponse = (await response.json()) as decimalResponse;
+    const decimal = decimalResponse.data;
+
+    const method = "POST";
+    const body = JSON.stringify({
+      name: airdropNameValue,
+      chainId: BigNumber.from(chainId).toString(),
+      data: airdropList.map((elm) => {
+        return {
+          address: elm.address,
+          amount: elm.amount.mul(BigNumber.from(10).pow(decimal)),
+        };
+      }),
+    });
+    const headers = {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    };
+
+    response = await fetch("/api/merkletree", { method, headers, body });
+    let merkleResponse = await response;
+    alert(merkleResponse.statusText);
+    if (!merkleResponse.ok) {
+      return;
+    }
   };
 
   return (
