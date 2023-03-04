@@ -1,4 +1,4 @@
-import { ethers } from "hardhat";
+const { ethers } = require("hardhat");
 
 async function main() {
   const MerkleAirdrop = await ethers.getContractFactory("MerkleAirdrop");
