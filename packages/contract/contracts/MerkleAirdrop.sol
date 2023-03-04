@@ -25,7 +25,9 @@ contract MerkleAirdrop {
 
     struct airdopInfo {
         address token;
+        // Total amount deposited to date
         uint256 depositedAmount;
+        // Current stock amount
         uint256 stockAmount;
         bytes32 merkleRoot;
         address owner;
@@ -41,11 +43,10 @@ contract MerkleAirdrop {
         bytes32 merkleRoot,
         address owner
     ) external {
-        if (airdopInfos[name].token != address(0)) revert AirDropInfoExist();
+        if (isAirdropInfoExist(name)) revert AirDropInfoExist();
         if (token == address(0)) revert NotZeroRequired();
         if (owner == address(0)) revert NotZeroRequired();
 
-        IERC20(token).approve(address(this), depositedAmount);
         IERC20(token).safeTransferFrom(
             msg.sender,
             address(this),
@@ -66,7 +67,6 @@ contract MerkleAirdrop {
         airdropInfoExist(name)
     {
         address token = airdopInfos[name].token;
-        IERC20(token).approve(address(this), amount);
         IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
         airdopInfos[name].depositedAmount += amount;
         airdopInfos[name].stockAmount += amount;
@@ -143,12 +143,12 @@ contract MerkleAirdrop {
         );
     }
 
-    function isAirdropInfoNotExist(bytes32 name) public view returns (bool) {
-        return airdopInfos[name].token == address(0);
+    function isAirdropInfoExist(bytes32 name) public view returns (bool) {
+        return airdopInfos[name].token != address(0);
     }
 
     modifier airdropInfoExist(bytes32 name) {
-        if (isAirdropInfoNotExist(name)) revert AirDropInfoNotExist();
+        if (!isAirdropInfoExist(name)) revert AirDropInfoNotExist();
         _;
     }
 }
