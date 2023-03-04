@@ -18,7 +18,7 @@ import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import Head from "next/head";
 import { useCallback, useRef, useState } from "react";
-import { BigNumber, ethers, providers } from "ethers";
+import { BigNumber, ethers } from "ethers";
 import { merkleAirdropAbi } from "@merkle-airdrop-tool/contract/exports/MerkleAirdrop";
 
 export default function CreateAirdrop() {

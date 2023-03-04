@@ -1,7 +1,6 @@
 import { ethers } from "hardhat";
 
 async function main() {
-
   const MerkleAirdrop = await ethers.getContractFactory("MerkleAirdrop");
   const merkleAirdrop = await MerkleAirdrop.deploy();
 
