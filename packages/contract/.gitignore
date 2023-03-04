@@ -4,5 +4,6 @@ node_modules
 
 #Hardhat files
 cache
-artifacts
-!artifacts/contracts/**/*.json
+/artifacts/*
+!/artifacts/contracts
+/artifacts/contracts/**/*.dbg.json
