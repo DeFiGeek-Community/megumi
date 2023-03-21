@@ -3,6 +3,7 @@ pragma solidity ^0.8.0;
 
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
+import "./interfaces/IPermit2.sol";
 
 error AlreadyClaimed();
 error InvalidProof();
@@ -15,6 +16,8 @@ error NotOwner();
 contract MerkleAirdrop {
     using SafeERC20 for IERC20;
 
+    IPermit2 public immutable Permit2;
+
     // This event is triggered whenever a call to #claim succeeds.
     event Claimed(
         bytes32 indexed name,
@@ -25,68 +28,130 @@ contract MerkleAirdrop {
 
     struct airdopInfo {
         address token;
+        address owner;
+        bytes32 merkleRoot;
         // Total amount deposited to date
         uint256 depositedAmount;
         // Current stock amount
         uint256 stockAmount;
-        bytes32 merkleRoot;
-        address owner;
     }
 
     mapping(bytes32 => airdopInfo) airdopInfos;
     mapping(bytes32 => mapping(uint256 => uint256)) claimedBitMap;
 
+    constructor(IPermit2 permit_) {
+        Permit2 = permit_;
+    }
+
     function registAirdropInfo(
         bytes32 name,
         address token,
-        uint256 depositedAmount,
-        bytes32 merkleRoot,
-        address owner
+        bytes32 merkleRoot
     ) external {
         if (isAirdropInfoExist(name)) revert AirDropInfoExist();
-        if (token == address(0)) revert NotZeroRequired();
-        if (owner == address(0)) revert NotZeroRequired();
+        airdopInfos[name] = airdopInfo(token, msg.sender, merkleRoot, 0, 0);
+    }
 
-        IERC20(token).safeTransferFrom(
+    function registAirdropInfoWithDeposit(
+        bytes32 name,
+        address token,
+        bytes32 merkleRoot,
+        uint256 depositAmount,
+        uint256 nonce,
+        uint256 deadline,
+        bytes calldata signature
+    ) external {
+        if (isAirdropInfoExist(name)) revert AirDropInfoExist();
+        Permit2.permitTransferFrom(
+            // The permit message.
+            IPermit2.PermitTransferFrom({
+                permitted: IPermit2.TokenPermissions({
+                    token: token,
+                    amount: depositAmount
+                }),
+                nonce: nonce,
+                deadline: deadline
+            }),
+            // The transfer recipient and amount.
+            IPermit2.SignatureTransferDetails({
+                to: address(this),
+                requestedAmount: depositAmount
+            }),
+            // The owner of the tokens, which must also be
+            // the signer of the message, otherwise this call
+            // will fail.
             msg.sender,
-            address(this),
-            depositedAmount
+            // The packed signature that was the result of signing
+            // the EIP712 hash of `permit`.
+            signature
         );
 
         airdopInfos[name] = airdopInfo(
             token,
-            depositedAmount,
-            depositedAmount,
+            msg.sender,
             merkleRoot,
-            owner
+            depositAmount,
+            depositAmount
         );
     }
 
-    function addAirdropTokenAmount(bytes32 name, uint256 amount)
-        external
-        airdropInfoExist(name)
-    {
-        address token = airdopInfos[name].token;
-        IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
-        airdopInfos[name].depositedAmount += amount;
-        airdopInfos[name].stockAmount += amount;
+    function depositAirdropToken(
+        bytes32 name,
+        uint256 depositAmount,
+        uint256 nonce,
+        uint256 deadline,
+        bytes calldata signature
+    ) external airdropInfoExist(name) {
+        Permit2.permitTransferFrom(
+            // The permit message.
+            IPermit2.PermitTransferFrom({
+                permitted: IPermit2.TokenPermissions({
+                    token: airdopInfos[name].token,
+                    amount: depositAmount
+                }),
+                nonce: nonce,
+                deadline: deadline
+            }),
+            // The transfer recipient and amount.
+            IPermit2.SignatureTransferDetails({
+                to: address(this),
+                requestedAmount: depositAmount
+            }),
+            // The owner of the tokens, which must also be
+            // the signer of the message, otherwise this call
+            // will fail.
+            msg.sender,
+            // The packed signature that was the result of signing
+            // the EIP712 hash of `permit`.
+            signature
+        );
+        airdopInfos[name].depositedAmount += depositAmount;
+        airdopInfos[name].stockAmount += depositAmount;
     }
 
-    function getAirdropInfo(bytes32 name)
-        external
-        view
-        airdropInfoExist(name)
-        returns (airdopInfo memory)
-    {
+    function withdrawDepositedToken(
+        bytes32 name
+    ) external airdropInfoExist(name) {
+        airdopInfo memory namedAirdopInfo = airdopInfos[name];
+        if (msg.sender != namedAirdopInfo.owner) revert NotOwner();
+        airdopInfos[name].depositedAmount -= namedAirdopInfo.stockAmount;
+        airdopInfos[name].stockAmount = 0;
+        IERC20(namedAirdopInfo.token).safeTransfer(
+            namedAirdopInfo.owner,
+            namedAirdopInfo.stockAmount
+        );
+    }
+
+    function getAirdropInfo(
+        bytes32 name
+    ) external view airdropInfoExist(name) returns (airdopInfo memory) {
         return airdopInfos[name];
     }
 
-    function isClaimed(bytes32 name, uint256 index)
-        public
-        view
-        airdropInfoExist(name)
-        returns (bool)
-    {
+    function isClaimed(
+        bytes32 name,
+        uint256 index
+    ) public view airdropInfoExist(name) returns (bool) {
         uint256 claimedWordIndex = index >> 8;
         uint256 claimedBitIndex = index % 256;
         uint256 claimedWord = claimedBitMap[name][claimedWordIndex];
@@ -127,20 +192,6 @@ contract MerkleAirdrop {
         IERC20(namedAirdopInfo.token).safeTransfer(account, amount);
 
         emit Claimed(name, index, account, amount);
-    }
-
-    function withdrawUnclaimedToken(bytes32 name)
-        external
-        airdropInfoExist(name)
-    {
-        airdopInfo memory namedAirdopInfo = airdopInfos[name];
-        if (msg.sender != namedAirdopInfo.owner) revert NotOwner();
-        airdopInfos[name].depositedAmount -= namedAirdopInfo.stockAmount;
-        airdopInfos[name].stockAmount = 0;
-        IERC20(namedAirdopInfo.token).safeTransfer(
-            namedAirdopInfo.owner,
-            namedAirdopInfo.stockAmount
-        );
     }
 
     function isAirdropInfoExist(bytes32 name) public view returns (bool) {

@@ -11,7 +11,7 @@ module.exports = {
     settings: {
       optimizer: {
         enabled: true,
-        runs: 200,
+        runs: 1000,
       },
     },
   },
@@ -22,11 +22,19 @@ module.exports = {
       accounts: [`${PRIVATE_KEY}`],
     },
     goerli: {
-      url: `https://mainnet.infura.io/v3/${INFURA_KEY}`,
+      url: `https://goerli.infura.io/v3/${INFURA_KEY}`,
       accounts: [`${PRIVATE_KEY}`],
     },
   },
   etherscan: {
     apiKey: ETHERSCAN_API_KEY,
+  },
+  hardhat: {
+    forking: {
+      enabled: true,
+      url: `https://mainnet.infura.io/v3/${INFURA_KEY}`,
+      blockNumber: 16382910
+    },
+    chainId: 1
   },
 };
