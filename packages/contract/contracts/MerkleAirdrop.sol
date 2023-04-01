@@ -144,14 +144,11 @@ contract MerkleAirdrop {
 
     function getAirdropInfo(
         bytes32 name
-    ) external view airdropInfoExist(name) returns (airdopInfo memory) {
+    ) external view returns (airdopInfo memory) {
         return airdopInfos[name];
     }
 
-    function isClaimed(
-        bytes32 name,
-        uint256 index
-    ) public view airdropInfoExist(name) returns (bool) {
+    function isClaimed(bytes32 name, uint256 index) public view returns (bool) {
         uint256 claimedWordIndex = index >> 8;
         uint256 claimedBitIndex = index % 256;
         uint256 claimedWord = claimedBitMap[name][claimedWordIndex];

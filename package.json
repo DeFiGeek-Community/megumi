@@ -26,6 +26,7 @@
     "prettier": "^2.8.4"
   },
   "dependencies": {
+    "@uniswap/permit2-sdk": "^1.2.0",
     "dotenv": "^16.0.3"
   }
 }

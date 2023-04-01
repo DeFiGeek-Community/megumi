@@ -25,16 +25,13 @@ module.exports = {
       url: `https://goerli.infura.io/v3/${INFURA_KEY}`,
       accounts: [`${PRIVATE_KEY}`],
     },
+    hardhat: {
+      forking: {
+        url: `https://mainnet.infura.io/v3/${INFURA_KEY}`,
+      },
+    },
   },
   etherscan: {
     apiKey: ETHERSCAN_API_KEY,
-  },
-  hardhat: {
-    forking: {
-      enabled: true,
-      url: `https://mainnet.infura.io/v3/${INFURA_KEY}`,
-      blockNumber: 16382910
-    },
-    chainId: 1
   },
 };
