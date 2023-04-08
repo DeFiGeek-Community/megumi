@@ -21,7 +21,7 @@ contract MerkleAirdrop {
     // This event is triggered whenever a call to #claim succeeds.
     event Claimed(
         bytes32 indexed name,
-        uint256 index,
+        uint256 indexed index,
         address indexed account,
         uint256 amount
     );
@@ -49,6 +49,8 @@ contract MerkleAirdrop {
         bytes32 merkleRoot
     ) external {
         if (isAirdropInfoExist(name)) revert AirDropInfoExist();
+        if (token == address(0)) revert NotZeroRequired();
+
         airdopInfos[name] = airdopInfo(token, msg.sender, merkleRoot, 0, 0);
     }
 
@@ -62,6 +64,8 @@ contract MerkleAirdrop {
         bytes calldata signature
     ) external {
         if (isAirdropInfoExist(name)) revert AirDropInfoExist();
+        if (token == address(0)) revert NotZeroRequired();
+
         Permit2.permitTransferFrom(
             // The permit message.
             IPermit2.PermitTransferFrom({
@@ -125,6 +129,7 @@ contract MerkleAirdrop {
             // the EIP712 hash of `permit`.
             signature
         );
+
         airdopInfos[name].depositedAmount += depositAmount;
         airdopInfos[name].stockAmount += depositAmount;
     }
