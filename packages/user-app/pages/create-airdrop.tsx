@@ -70,6 +70,7 @@ export default function CreateAirdrop() {
     useState(false);
   const [excludedAddressListError, setExcludedAddressListError] =
     useState(false);
+  const [deployReadyFlg, setDeployReadyFlg] = useState(false);
 
   const [snapshotList, setSnaphshotList] = useState<[string, BigNumber][]>([]);
   const [airdropList, setAirdropList] = useState<
@@ -100,7 +101,7 @@ export default function CreateAirdrop() {
       [key: string]: string;
     };
 
-    const networks: Networks = {
+    let networks: Networks = {
       eth_mainnet: "0x1", // 1
       // Test nets
       eth_goerli: "0x5", // 5
@@ -110,8 +111,11 @@ export default function CreateAirdrop() {
       // Side chains
       // polygon_mainnet: "0x89", // 137
       // polygon_mumbai: "0x13881", // 80001
-      local: "0x7a69", // 31337
     };
+
+    if (process.env.NODE_ENV === "development") {
+      networks["local"] = "0x7a69"; // 31337
+    }
 
     const getKeyByValue = useCallback(
       (value: any) => {
@@ -200,7 +204,7 @@ export default function CreateAirdrop() {
   function AirdropcalculatedList() {
     return (
       <>
-        {JSON.stringify(airdropList) !== "[]" ? (
+        {deployReadyFlg ? (
           <Box sx={{ width: 0.7 }}>
             <Stack>
               <Box sx={{ display: "flex", justifyContent: "center" }}>
@@ -321,9 +325,15 @@ export default function CreateAirdrop() {
                 <Button
                   variant="contained"
                   onClick={() => {
-                    if (formValidation()) {
-                      deployAirdropInfo();
-                    }
+                    deployAirdropInfo();
+                  }}
+                >
+                  Approve Airdrop Token for MerkleAirdrop
+                </Button>
+                <Button
+                  variant="contained"
+                  onClick={() => {
+                    deployAirdropInfo();
                   }}
                 >
                   Deploy Airdrop Information
@@ -944,9 +954,11 @@ export default function CreateAirdrop() {
                 <Button
                   variant="contained"
                   onClick={() => {
-                    if (formValidation()) {
+                    let valid = formValidation();
+                    if (valid) {
                       generateAirdropList();
                     }
+                    setDeployReadyFlg(valid);
                   }}
                 >
                   Create Airdrop List
