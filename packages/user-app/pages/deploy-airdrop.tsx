@@ -641,6 +641,7 @@ export default function CreateAirdrop() {
             <>
                 {status === "connected" ? (
                     <>
+                        <p>deploy-airdrop</p>
                         <AppBarStatus />
                         <Stack>
                             <Box
