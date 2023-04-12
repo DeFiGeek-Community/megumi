@@ -70,7 +70,6 @@ export default function CreateAirdrop() {
         useState(false);
     const [excludedAddressListError, setExcludedAddressListError] =
         useState(false);
-    const [deployReadyFlg, setDeployReadyFlg] = useState(false);
 
     const [snapshotList, setSnaphshotList] = useState<[string, BigNumber][]>([]);
     const [airdropList, setAirdropList] = useState<
@@ -811,7 +810,6 @@ export default function CreateAirdrop() {
                                         if (valid) {
                                             generateAirdropList();
                                         }
-                                        setDeployReadyFlg(valid);
                                     }}
                                 >
                                     Create Airdrop List
