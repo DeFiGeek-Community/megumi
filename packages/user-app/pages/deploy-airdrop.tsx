@@ -633,42 +633,6 @@ export default function CreateAirdrop() {
                                             />
                                         </Grid>
                                     </Grid>
-                                    <Grid
-                                        container
-                                        sx={{
-                                            m: 2,
-                                        }}
-                                        columnSpacing={{ xs: 2 }}
-                                    >
-                                        <Grid item xs={3}>
-                                            <Typography
-                                                sx={{
-                                                    m: 2,
-                                                }}
-                                            >
-                                                Airdrop Token Amount
-                                            </Typography>
-                                        </Grid>
-                                        <Grid item xs={6}>
-                                            <TextField
-                                                fullWidth
-                                                id="airdrop-token-amount"
-                                                variant="outlined"
-                                                required
-                                                defaultValue={airdropTokenAmountValue}
-                                                inputProps={{ style: { textAlign: "right" } }}
-                                                onChange={(e: OnChangeEvent) =>
-                                                    setAirdropTokenAmountValue(e.target.value)
-                                                }
-                                                inputRef={airdropTokenAmountRef}
-                                                error={airdropTokenAmountError}
-                                                helperText={
-                                                    airdropTokenAmountError &&
-                                                    airdropTokenAmountRef?.current?.validationMessage
-                                                }
-                                            />
-                                        </Grid>
-                                    </Grid>
                                 </Stack>
                             </Box>
                             <Box

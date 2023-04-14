@@ -8,12 +8,6 @@ import List from "@mui/material/List";
 import ListItem from "@mui/material/ListItem";
 import Popover from "@mui/material/Popover";
 import Stack from "@mui/material/Stack";
-import Table from "@mui/material/Table";
-import TableBody from "@mui/material/TableBody";
-import TableCell from "@mui/material/TableCell";
-import TableContainer from "@mui/material/TableContainer";
-import TableHead from "@mui/material/TableHead";
-import TableRow from "@mui/material/TableRow";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import Head from "next/head";
@@ -203,28 +197,7 @@ export default function CreateAirdrop() {
     const formValidation = (): boolean => {
         let valid = true;
 
-        let v = airdropNameRef?.current;
-        if (v) {
-            v.setCustomValidity("");
-            let ok = v.validity.valid;
-            setAirdropNameError(!ok);
-            if (!ok) {
-                v.setCustomValidity("name is not valid");
-            }
-            valid &&= ok;
-        }
-        v = airdropTokenAddressRef?.current;
-        if (v) {
-            v.setCustomValidity("");
-            let ok = v.validity.valid;
-            ok &&= ethers.utils.isAddress(v.value);
-            setAirdropTokenAddressError(!ok);
-            if (!ok) {
-                v.setCustomValidity("address is not valid");
-            }
-            valid &&= ok;
-        }
-        v = airdropTokenAmountRef?.current;
+        let v = airdropTokenAmountRef?.current;
         if (v) {
             v.setCustomValidity("");
             let ok = v.validity.valid;
@@ -446,6 +419,7 @@ export default function CreateAirdrop() {
 
         setTtlAirdropAmount(ttlAirdropAmount.toString());
         setInitialDepositAmountValue(ttlAirdropAmount.toString());
+        console.log("OK");
     };
 
     return (
@@ -475,6 +449,42 @@ export default function CreateAirdrop() {
                                     }}
                                 >
 
+                                    <Grid
+                                        container
+                                        sx={{
+                                            m: 2,
+                                        }}
+                                        columnSpacing={{ xs: 2 }}
+                                    >
+                                        <Grid item xs={3}>
+                                            <Typography
+                                                sx={{
+                                                    m: 2,
+                                                }}
+                                            >
+                                                Airdrop Token Amount
+                                            </Typography>
+                                        </Grid>
+                                        <Grid item xs={6}>
+                                            <TextField
+                                                fullWidth
+                                                id="airdrop-token-amount"
+                                                variant="outlined"
+                                                required
+                                                defaultValue={airdropTokenAmountValue}
+                                                inputProps={{ style: { textAlign: "right" } }}
+                                                onChange={(e: OnChangeEvent) =>
+                                                    setAirdropTokenAmountValue(e.target.value)
+                                                }
+                                                inputRef={airdropTokenAmountRef}
+                                                error={airdropTokenAmountError}
+                                                helperText={
+                                                    airdropTokenAmountError &&
+                                                    airdropTokenAmountRef?.current?.validationMessage
+                                                }
+                                            />
+                                        </Grid>
+                                    </Grid>
                                     <Grid
                                         container
                                         sx={{
