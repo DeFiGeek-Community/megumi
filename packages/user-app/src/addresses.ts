@@ -6,7 +6,7 @@ enum SupportedChainId {
 
 export const MERKLEAIRDROP_ADDRESSES: AddressMap = {
   [SupportedChainId.MAINNET]: '0x0000000000000000000000000000000000000000',
-  [SupportedChainId.GOERLI]: '0xD93fEB7Ab94cc29Ed6d4268bb90f8DB96CC21fA8',
+  [SupportedChainId.GOERLI]: '0x3434A5F59ac564B2Cc2095b2bb7D123d9cb9b42f',
   [SupportedChainId.LOCAL]: '0xcf7ed3acca5a467e9e704c703e8d87f634fb0fc9',
 };
 
