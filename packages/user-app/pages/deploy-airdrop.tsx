@@ -27,48 +27,17 @@ export default function CreateAirdrop() {
 
     const airdropNameRef = useRef<HTMLInputElement>(null);
     const airdropTokenAddressRef = useRef<HTMLInputElement>(null);
-    const airdropTokenAmountRef = useRef<HTMLInputElement>(null);
     const initialDepositAmountRef = useRef<HTMLInputElement>(null);
-    const snapshotTokenAddress1Ref = useRef<HTMLInputElement>(null);
-    const snapshotTokenAddress2Ref = useRef<HTMLInputElement>(null);
-    const snapshotTokenCoefficient1Ref = useRef<HTMLInputElement>(null);
-    const snapshotTokenCoefficient2Ref = useRef<HTMLInputElement>(null);
-    const snapshotBlockNumberRef = useRef<HTMLInputElement>(null);
-    const excludedAddressListRef = useRef<HTMLInputElement>(null);
 
     const [airdropNameValue, setAirdropNameValue] = useState("");
     const [airdropTokenAddressValue, setAirdropTokenAddressValue] = useState("");
-    const [airdropTokenAmountValue, setAirdropTokenAmountValue] = useState("");
     const [initialDepositAmountValue, setInitialDepositAmountValue] =
         useState("0");
-    const [snapshotTokenAddress1Value, setSnapshotTokenAddress1Value] =
-        useState("");
-    const [snapshotTokenAddress2Value, setSnapshotTokenAddress2Value] =
-        useState("");
-    const [snapshotTokenCoefficient1Value, setSnapshotTokenCoefficient1Value] =
-        useState("1");
-    const [snapshotTokenCoefficient2Value, setSnapshotTokenCoefficient2Value] =
-        useState("1");
-    const [snapshotBlockNumberValue, setSnapshotBlockNumberValue] = useState("");
-    const [excludedAddressListValue, setExcludedAddressListValue] = useState("");
 
     const [airdropNameError, setAirdropNameError] = useState(false);
     const [airdropTokenAddressError, setAirdropTokenAddressError] =
         useState(false);
-    const [airdropTokenAmountError, setAirdropTokenAmountError] = useState(false);
     const [initialDepositAmountError, setInitialDepositAmountError] =
-        useState(false);
-    const [snapshotTokenAddress1Error, setSnapshotTokenAddress1Error] =
-        useState(false);
-    const [snapshotTokenAddress2Error, setSnapshotTokenAddress2Error] =
-        useState(false);
-    const [snapshotTokenCoefficient1Error, setSnapshotTokenCoefficient1Error] =
-        useState(false);
-    const [snapshotTokenCoefficient2Error, setSnapshotTokenCoefficient2Error] =
-        useState(false);
-    const [snapshotBlockNumberError, setSnapshotBlockNumberError] =
-        useState(false);
-    const [excludedAddressListError, setExcludedAddressListError] =
         useState(false);
     const [deployReadyFlg, setDeployReadyFlg] = useState(false);
 
@@ -372,135 +341,8 @@ export default function CreateAirdrop() {
             }
             valid &&= ok;
         }
-        v = airdropTokenAmountRef?.current;
-        if (v) {
-            v.setCustomValidity("");
-            let ok = v.validity.valid;
-            ok &&= Number.isInteger(+v.value);
-            setAirdropTokenAmountError(!ok);
-            if (!ok) {
-                v.setCustomValidity("amount is only integer");
-            }
-            valid &&= ok;
-        }
-        v = initialDepositAmountRef?.current;
-        if (v) {
-            v.setCustomValidity("");
-            let ok = v.validity.valid;
-            ok &&= Number.isInteger(+v.value);
-            setInitialDepositAmountError(!ok);
-            if (!ok) {
-                v.setCustomValidity("amount is only integer");
-            }
-            valid &&= ok;
-        }
-        v = snapshotTokenAddress1Ref?.current;
-        if (v) {
-            v.setCustomValidity("");
-            let ok = v.validity.valid;
-            ok &&= ethers.utils.isAddress(v.value);
-            setSnapshotTokenAddress1Error(!ok);
-            if (!ok) {
-                v.setCustomValidity("address is not valid");
-            }
-            valid &&= ok;
-        }
-        v = snapshotTokenAddress2Ref?.current;
-        if (v) {
-            v.setCustomValidity("");
-            let ok = v.validity.valid;
-            if (v.value !== "") {
-                ok &&= ethers.utils.isAddress(v.value);
-            }
-            setSnapshotTokenAddress2Error(!ok);
-            if (!ok) {
-                v.setCustomValidity("address is not valid");
-            }
-            valid &&= ok;
-        }
-        v = snapshotTokenCoefficient1Ref?.current;
-        if (v) {
-            v.setCustomValidity("");
-            let ok = v.validity.valid;
-            ok &&= Number.isInteger(+v.value);
-            setSnapshotTokenCoefficient1Error(!ok);
-            if (!ok) {
-                v.setCustomValidity("coefficient is only integer");
-            }
-            valid &&= ok;
-        }
-        v = snapshotTokenCoefficient2Ref?.current;
-        if (v) {
-            v.setCustomValidity("");
-            let ok = v.validity.valid;
-            ok &&= Number.isInteger(+v.value);
-            setSnapshotTokenCoefficient2Error(!ok);
-            if (!ok) {
-                v.setCustomValidity("coefficient is only integer");
-            }
-            valid &&= ok;
-        }
-        v = snapshotBlockNumberRef?.current;
-        if (v) {
-            v.setCustomValidity("");
-            let ok = v.validity.valid;
-            ok &&= Number.isInteger(+v.value);
-            setSnapshotBlockNumberError(!ok);
-            if (!ok) {
-                v.setCustomValidity("block number is only integer");
-            }
-            valid &&= ok;
-        }
-        v = excludedAddressListRef?.current;
-        if (v) {
-            v.setCustomValidity("");
-            let ok = v.validity.valid;
-            if (v.value !== "") {
-                let spl = v.value.split(/\r?\n/);
-                spl.forEach(function (elm) {
-                    ok &&= ethers.utils.isAddress(elm);
-                });
-            }
-            setExcludedAddressListError(!ok);
-            if (!ok) {
-                v.setCustomValidity("address is not valid");
-            }
-            valid &&= ok;
-        }
 
         return valid;
-    };
-
-    const extractTokenBalance = async (
-        snapshotAmount: { [address: string]: BigNumber },
-        ttlSnapshotAmount: BigNumber,
-        snapshotTokenAddress: string,
-        coefficient: BigNumber
-    ): Promise<[{ [address: string]: BigNumber }, BigNumber]> => {
-        let response = await fetch(
-            "/api/token/holders?chainId=" +
-            BigNumber.from(chainId).toString() +
-            "&tokenAddress=" +
-            snapshotTokenAddress +
-            "&blockNumber=" +
-            snapshotBlockNumberValue
-        );
-        let responseJson = (await response.json()) as holdersResponse;
-        responseJson.data.map((data: { address: string; balance: string }) => {
-            if (excludedAddressListValue.includes(data.address)) {
-                return;
-            }
-            const parsedAmount = BigNumber.from(data.balance).mul(coefficient);
-            if (snapshotAmount[data.address] == undefined) {
-                snapshotAmount[data.address] = parsedAmount;
-            } else {
-                snapshotAmount[data.address] =
-                    snapshotAmount[data.address].add(parsedAmount);
-            }
-            ttlSnapshotAmount = ttlSnapshotAmount.add(parsedAmount);
-        });
-
-        return [snapshotAmount, ttlSnapshotAmount];
     };
 
     const deployAirdropInfo = async () => {
