@@ -15,12 +15,12 @@ import { useCallback, useRef, useState } from "react";
 import { BigNumber, ethers } from "ethers";
 import { merkleAirdropAbi } from "@merkle-airdrop-tool/contract/exports/MerkleAirdrop";
 
+import { parseBalanceMap } from "@/src/parse-balance-map";
+
 export default function CreateAirdrop() {
     const { status, connect, account, chainId } = useMetaMask();
     const { switchChain } = useMetaMask();
 
-    const airdropNameRef = useRef<HTMLInputElement>(null);
-    const airdropTokenAddressRef = useRef<HTMLInputElement>(null);
     const airdropTokenAmountRef = useRef<HTMLInputElement>(null);
     const initialDepositAmountRef = useRef<HTMLInputElement>(null);
     const snapshotTokenAddress1Ref = useRef<HTMLInputElement>(null);
@@ -30,8 +30,6 @@ export default function CreateAirdrop() {
     const snapshotBlockNumberRef = useRef<HTMLInputElement>(null);
     const excludedAddressListRef = useRef<HTMLInputElement>(null);
 
-    const [airdropNameValue, setAirdropNameValue] = useState("");
-    const [airdropTokenAddressValue, setAirdropTokenAddressValue] = useState("");
     const [airdropTokenAmountValue, setAirdropTokenAmountValue] = useState("");
     const [initialDepositAmountValue, setInitialDepositAmountValue] =
         useState("0");
@@ -46,9 +44,6 @@ export default function CreateAirdrop() {
     const [snapshotBlockNumberValue, setSnapshotBlockNumberValue] = useState("");
     const [excludedAddressListValue, setExcludedAddressListValue] = useState("");
 
-    const [airdropNameError, setAirdropNameError] = useState(false);
-    const [airdropTokenAddressError, setAirdropTokenAddressError] =
-        useState(false);
     const [airdropTokenAmountError, setAirdropTokenAmountError] = useState(false);
     const [initialDepositAmountError, setInitialDepositAmountError] =
         useState(false);
@@ -328,6 +323,33 @@ export default function CreateAirdrop() {
         return [snapshotAmount, ttlSnapshotAmount];
     };
 
+    const useApiForWrittingFile = async (_airdropAmountList: any, _chainId: string) => {
+        await fetch('/api/merkletree/test_index', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                name: 'merkle-tree.json',
+                chainId: parseInt(_chainId, 16),//5,
+                data: _airdropAmountList,
+            }),
+        });
+    }
+
+    const downloadJsonDirectly = async (_airdropAmountList: any) => {
+        let merkletree = JSON.stringify(parseBalanceMap(_airdropAmountList));
+        const fileName = 'merkle-tree.json';
+        const data = new Blob([JSON.stringify(merkletree)], { type: 'text/json' });
+        const jsonURL = window.URL.createObjectURL(data);
+        const link = document.createElement('a');
+        document.body.appendChild(link);
+        link.href = jsonURL;
+        link.setAttribute('download', fileName);
+        link.click();
+        document.body.removeChild(link);
+    }
+
     const generateAirdropList = async () => {
         if (chainId == null) {
             return;
@@ -419,7 +441,13 @@ export default function CreateAirdrop() {
 
         setTtlAirdropAmount(ttlAirdropAmount.toString());
         setInitialDepositAmountValue(ttlAirdropAmount.toString());
-        console.log("OK");
+
+        //the cese using api
+        useApiForWrittingFile(airdropAmountList, chainId);
+
+        //the case downloading directly
+        downloadJsonDirectly(airdropAmountList);
+
     };
 
     return (
