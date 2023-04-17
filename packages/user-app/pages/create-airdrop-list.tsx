@@ -711,7 +711,7 @@ export default function CreateAirdrop() {
                                         }
                                     }}
                                 >
-                                    Create Airdrop List
+                                    Create Airdrop List & Download JSON
                                 </Button>
                             </Box>
                             <Box
