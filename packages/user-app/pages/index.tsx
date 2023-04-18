@@ -16,6 +16,20 @@ export default function Home() {
         <Box sx={{ p: 1, m: 1, display: "flex", justifyContent: "center" }}>
           <Button
             variant="contained"
+            href="/create-airdrop-list"
+            sx={{ p: 1, m: 1 }}
+          >
+            to create-airdrop-list
+          </Button>
+          <Button
+            variant="contained"
+            href="/deploy-airdrop"
+            sx={{ p: 1, m: 1 }}
+          >
+            to deploy-airdrop
+          </Button>
+          <Button
+            variant="contained"
             href="/create-airdrop"
             sx={{ p: 1, m: 1 }}
           >
