@@ -13,7 +13,6 @@ import Typography from "@mui/material/Typography";
 import Head from "next/head";
 import { useCallback, useRef, useState } from "react";
 import { BigNumber, ethers } from "ethers";
-import { merkleAirdropAbi } from "@merkle-airdrop-tool/contract/exports/MerkleAirdrop";
 
 import { parseBalanceMap } from "@/src/parse-balance-map";
 
@@ -330,7 +329,7 @@ export default function CreateAirdrop() {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                name: 'merkle-tree.json',
+                name: 'merkle-tree',
                 chainId: parseInt(_chainId, 16),//5,
                 data: _airdropAmountList,
             }),
@@ -443,7 +442,7 @@ export default function CreateAirdrop() {
         setInitialDepositAmountValue(ttlAirdropAmount.toString());
 
         //the cese using api
-        useApiForWrittingFile(airdropAmountList, chainId);
+        //useApiForWrittingFile(airdropAmountList, chainId);
 
         //the case downloading directly
         downloadJsonDirectly(airdropAmountList);

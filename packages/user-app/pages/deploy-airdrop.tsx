@@ -19,7 +19,6 @@ import Typography from "@mui/material/Typography";
 import Head from "next/head";
 import { useCallback, useRef, useState } from "react";
 import { BigNumber, ethers } from "ethers";
-import { merkleAirdropAbi } from "@merkle-airdrop-tool/contract/exports/MerkleAirdrop";
 
 export default function CreateAirdrop() {
     const { status, connect, account, chainId } = useMetaMask();
