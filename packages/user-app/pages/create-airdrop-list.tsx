@@ -273,11 +273,11 @@ export default function CreateAirdrop() {
   ): Promise<[{ [address: string]: BigNumber }, BigNumber]> => {
     let response = await fetch(
       "/api/token/holders?chainId=" +
-        BigNumber.from(chainId).toString() +
-        "&tokenAddress=" +
-        snapshotTokenAddress +
-        "&blockNumber=" +
-        snapshotBlockNumberValue
+      BigNumber.from(chainId).toString() +
+      "&tokenAddress=" +
+      snapshotTokenAddress +
+      "&blockNumber=" +
+      snapshotBlockNumberValue
     );
     let responseJson = (await response.json()) as holdersResponse;
     responseJson.data.map((data: { address: string; balance: string }) => {
@@ -297,7 +297,7 @@ export default function CreateAirdrop() {
     return [snapshotAmount, ttlSnapshotAmount];
   };
 
-  const useApiForWriteFile = async (airdropAmountList: airdropListData[]) => {
+  const useApiForWrittingFile = async (airdropAmountList: airdropListData[]) => {
     await fetch("/api/merkletree", {
       method: "POST",
       headers: {
@@ -344,18 +344,18 @@ export default function CreateAirdrop() {
     if (snapshotTokenAddress2Value !== "") {
       let response = await fetch(
         "/api/token/decimal?chainId=" +
-          BigNumber.from(chainId).toString() +
-          "&tokenAddress=" +
-          snapshotTokenAddress1Value
+        BigNumber.from(chainId).toString() +
+        "&tokenAddress=" +
+        snapshotTokenAddress1Value
       );
       let responseJson = (await response.json()) as decimalResponse;
       const decimals1 = responseJson.data;
 
       response = await fetch(
         "/api/token/decimal?chainId=" +
-          BigNumber.from(chainId).toString() +
-          "&tokenAddress=" +
-          snapshotTokenAddress2Value
+        BigNumber.from(chainId).toString() +
+        "&tokenAddress=" +
+        snapshotTokenAddress2Value
       );
       responseJson = (await response.json()) as decimalResponse;
       const decimals2 = responseJson.data;
@@ -415,11 +415,9 @@ export default function CreateAirdrop() {
 
     setTtlAirdropAmount(ttlAirdropAmount.toString());
 
-    //the cese using api
-    //useApiForWrittingFile(airdropAmountList, chainId);
+    //useApiForWrittingFile(airdropAmountList); //the cese using api
 
-    //the case downloading directly
-    downloadJson(airdropAmountList);
+    downloadJson(airdropAmountList); //the case downloading directly
   };
 
   return (
