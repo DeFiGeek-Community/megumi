@@ -8,6 +8,7 @@ const { isAddress, getAddress } = utils;
 // Anyone can verify that all air drops are included in the tree,
 // and the tree has no additional distributions.
 interface MerkleDistributorInfo {
+  airdropAmount: string;
   merkleRoot: string;
   claims: {
     [account: string]: {
@@ -22,6 +23,7 @@ type Format = { [account: string]: number | string };
 type Format2 = { address: string; amount: BigNumber | string };
 
 export function parseBalanceMap(
+  airdropAmount: string,
   balances: Format | Format2[]
 ): MerkleDistributorInfo {
   const FormatToFormat2: Format2[] = Array.isArray(balances)
@@ -79,6 +81,7 @@ export function parseBalanceMap(
   }, {});
 
   return {
+    airdropAmount: airdropAmount,
     merkleRoot: tree.getHexRoot(),
     claims,
   };
