@@ -3,7 +3,6 @@ import AppBar from "@mui/material/AppBar";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Divider from "@mui/material/Divider";
-import Grid from "@mui/material/Grid";
 import List from "@mui/material/List";
 import ListItem from "@mui/material/ListItem";
 import Popover from "@mui/material/Popover";
@@ -35,6 +34,7 @@ export default function CreateAirdrop() {
   const snapshotTokenCoefficient2Ref = useRef<HTMLInputElement>(null);
   const snapshotBlockNumberRef = useRef<HTMLInputElement>(null);
   const excludedAddressListRef = useRef<HTMLInputElement>(null);
+  const airdropAddressAmountListRef = useRef<HTMLInputElement>(null);
 
   const [airdropTokenAmountValue, setAirdropTokenAmountValue] = useState("");
   const [snapshotTokenAddress1Value, setSnapshotTokenAddress1Value] =
@@ -47,6 +47,7 @@ export default function CreateAirdrop() {
     useState("1");
   const [snapshotBlockNumberValue, setSnapshotBlockNumberValue] = useState("");
   const [excludedAddressListValue, setExcludedAddressListValue] = useState("");
+  const [airdropAddressAmountListValue, setAirdropAddressAmountListValue] = useState("");
 
   const [airdropTokenAmountError, setAirdropTokenAmountError] = useState(false);
   const [snapshotTokenAddress1Error, setSnapshotTokenAddress1Error] =
@@ -60,6 +61,8 @@ export default function CreateAirdrop() {
   const [snapshotBlockNumberError, setSnapshotBlockNumberError] =
     useState(false);
   const [excludedAddressListError, setExcludedAddressListError] =
+    useState(false);
+  const [airdropAddressAmountListError, setAirdropAddressAmountListError] =
     useState(false);
 
   const [snapshotList, setSnaphshotList] = useState<[string, BigNumber][]>([]);
@@ -286,91 +289,143 @@ export default function CreateAirdrop() {
   }
   const formValidation = (): boolean => {
     let valid = true;
+    let errorText = "";
 
-    let v = airdropTokenAmountRef?.current;
-    if (v) {
-      v.setCustomValidity("");
-      let ok = v.validity.valid;
-      ok &&= Number.isInteger(+v.value);
-      setAirdropTokenAmountError(!ok);
-      if (!ok) {
-        v.setCustomValidity("amount is only integer");
-      }
-      valid &&= ok;
-    }
-    v = snapshotTokenAddress1Ref?.current;
-    if (v) {
-      v.setCustomValidity("");
-      let ok = v.validity.valid;
-      ok &&= ethers.utils.isAddress(v.value);
-      setSnapshotTokenAddress1Error(!ok);
-      if (!ok) {
-        v.setCustomValidity("address is not valid");
-      }
-      valid &&= ok;
-    }
-    v = snapshotTokenAddress2Ref?.current;
+    let v = airdropAddressAmountListRef?.current;
     if (v) {
       v.setCustomValidity("");
       let ok = v.validity.valid;
       if (v.value !== "") {
-        ok &&= ethers.utils.isAddress(v.value);
+        let spl = v.value.split(/\r?\n/);
+        //,が文字列に含まれているか判定
+        //含まれていれば,で分割をする
+        //,で分割したものの要素数が2か判定
+        //,で分けたときに前半と後半の文字列がどちらも空文字でないか判定
+        //,で分けたときに前半の文字列がアドレスになっているか判定
+        //,で分けたときに後半の文字列が数値になっているか判定
+        //,で分けたときに後半の文字列が整数か判定
+        spl.forEach(function (elm) {
+          ok &&= elm.includes(',');
+          if (ok) {
+            let result: string[] = elm.split(',');
+            ok &&= result.length === 2;
+            if (!ok) { errorText = "each line must contain two elements"; }
+            ok &&= result[0] !== "" && result[1] !== "";
+            if (!ok) { errorText = "address and/or amount is a blank character"; }
+            ok &&= ethers.utils.isAddress(result[0]);
+            if (!ok) { errorText = "address is not valid"; }
+            ok &&= !Number.isNaN(result[1]);
+            if (!ok) { errorText = "amount is only number"; }
+            ok &&= Number.isInteger(result[1]);
+            if (!ok) { errorText = "amount is only integer"; }
+          }
+          else { errorText = "string does not contain a comma"; }
+        });
       }
-      setSnapshotTokenAddress2Error(!ok);
+      setAirdropAddressAmountListError(!ok);
       if (!ok) {
-        v.setCustomValidity("address is not valid");
+        v.setCustomValidity(errorText);
       }
       valid &&= ok;
     }
-    v = snapshotTokenCoefficient1Ref?.current;
-    if (v) {
-      v.setCustomValidity("");
-      let ok = v.validity.valid;
-      ok &&= Number.isInteger(+v.value);
-      setSnapshotTokenCoefficient1Error(!ok);
-      if (!ok) {
-        v.setCustomValidity("coefficient is only integer");
-      }
-      valid &&= ok;
-    }
-    v = snapshotTokenCoefficient2Ref?.current;
-    if (v) {
-      v.setCustomValidity("");
-      let ok = v.validity.valid;
-      ok &&= Number.isInteger(+v.value);
-      setSnapshotTokenCoefficient2Error(!ok);
-      if (!ok) {
-        v.setCustomValidity("coefficient is only integer");
-      }
-      valid &&= ok;
-    }
-    v = snapshotBlockNumberRef?.current;
-    if (v) {
-      v.setCustomValidity("");
-      let ok = v.validity.valid;
-      ok &&= Number.isInteger(+v.value);
-      setSnapshotBlockNumberError(!ok);
-      if (!ok) {
-        v.setCustomValidity("block number is only integer");
-      }
-      valid &&= ok;
-    }
-    v = excludedAddressListRef?.current;
+    /*let v = airdropAddressAmountListRef?.current;
     if (v) {
       v.setCustomValidity("");
       let ok = v.validity.valid;
       if (v.value !== "") {
         let spl = v.value.split(/\r?\n/);
         spl.forEach(function (elm) {
-          ok &&= ethers.utils.isAddress(elm);
+          ok &&= elm.includes(',');
         });
       }
-      setExcludedAddressListError(!ok);
+      setAirdropAddressAmountListError(!ok);
       if (!ok) {
-        v.setCustomValidity("address is not valid");
+        v.setCustomValidity("string does not contain a comma");
       }
       valid &&= ok;
     }
+    if (valid) {
+      if (v) {
+        v.setCustomValidity("");
+        let ok = v.validity.valid;
+        if (v.value !== "") {
+          let spl = v.value.split(/\r?\n/);
+          spl.forEach(function (elm) {
+            let result: string[] = elm.split(',');
+            ok &&= result.length === 2;
+          });
+        }
+        setAirdropAddressAmountListError(!ok);
+        if (!ok) {
+          v.setCustomValidity("each line must contain two elements");
+        }
+        valid &&= ok;
+      }
+      if (v) {
+        v.setCustomValidity("");
+        let ok = v.validity.valid;
+        if (v.value !== "") {
+          let spl = v.value.split(/\r?\n/);
+          spl.forEach(function (elm) {
+            let result: string[] = elm.split(',');
+            ok &&= result[0] !== "" && result[1] !== "";
+          });
+        }
+        setAirdropAddressAmountListError(!ok);
+        if (!ok) {
+          v.setCustomValidity("address and/or amount is a blank character");
+        }
+        valid &&= ok;
+      }
+      if (v) {
+        v.setCustomValidity("");
+        let ok = v.validity.valid;
+        if (v.value !== "") {
+          let spl = v.value.split(/\r?\n/);
+          spl.forEach(function (elm) {
+            let result: string[] = elm.split(',');
+            ok &&= ethers.utils.isAddress(result[0]);
+          });
+        }
+        setAirdropAddressAmountListError(!ok);
+        if (!ok) {
+          v.setCustomValidity("address is not valid");
+        }
+        valid &&= ok;
+      }
+      if (v) {
+        v.setCustomValidity("");
+        let ok = v.validity.valid;
+        if (v.value !== "") {
+          let spl = v.value.split(/\r?\n/);
+          spl.forEach(function (elm) {
+            let result: string[] = elm.split(',');
+            ok &&= !Number.isNaN(result[1]);
+          });
+        }
+        setAirdropAddressAmountListError(!ok);
+        if (!ok) {
+          v.setCustomValidity("amount is only number");
+        }
+        valid &&= ok;
+      }
+      if (v) {
+        v.setCustomValidity("");
+        let ok = v.validity.valid;
+        if (v.value !== "") {
+          let spl = v.value.split(/\r?\n/);
+          spl.forEach(function (elm) {
+            let result: string[] = elm.split(',');
+            ok &&= Number.isInteger(result[1]);
+          });
+        }
+        setAirdropAddressAmountListError(!ok);
+        if (!ok) {
+          v.setCustomValidity("amount is only integer");
+        }
+        valid &&= ok;
+      }
+    }*/
 
     return valid;
   };
@@ -569,15 +624,15 @@ export default function CreateAirdrop() {
                     sx={{
                       width: 0.5,
                     }}
-                    defaultValue={excludedAddressListValue}
+                    defaultValue={airdropAddressAmountListValue}
                     onChange={(e: OnChangeEvent) =>
-                      setExcludedAddressListValue(e.target.value)
+                      setAirdropAddressAmountListValue(e.target.value)
                     }
-                    inputRef={excludedAddressListRef}
-                    error={excludedAddressListError}
+                    inputRef={airdropAddressAmountListRef}
+                    error={airdropAddressAmountListError}
                     helperText={
-                      excludedAddressListError &&
-                      excludedAddressListRef?.current?.validationMessage
+                      airdropAddressAmountListError &&
+                      airdropAddressAmountListRef?.current?.validationMessage
                     }
                   />
                 </Stack>
