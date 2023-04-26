@@ -297,13 +297,36 @@ export default function CreateAirdrop() {
       let ok = v.validity.valid;
       if (v.value !== "") {
         let spl = v.value.split(/\r?\n/);
-        //,が文字列に含まれているか判定
-        //含まれていれば,で分割をする
-        //,で分割したものの要素数が2か判定
-        //,で分けたときに前半と後半の文字列がどちらも空文字でないか判定
-        //,で分けたときに前半の文字列がアドレスになっているか判定
-        //,で分けたときに後半の文字列が数値になっているか判定
-        //,で分けたときに後半の文字列が整数か判定
+        for (let i = 0; i < spl.length; i++) {
+          ok &&= spl[i].includes(',');
+          if (ok) {
+            let result: string[] = spl[i].split(',');
+            ok &&= result.length === 2;
+            if (!ok) { errorText = "each line must contain two elements"; break; }
+            ok &&= result[0] !== "" && result[1] !== "";
+            if (!ok) { errorText = "address and/or amount is a blank character"; break; }
+            ok &&= ethers.utils.isAddress(result[0]);
+            if (!ok) { errorText = "address is not valid"; break; }
+            ok &&= !Number.isNaN(result[1]);
+            if (!ok) { errorText = "amount is only number"; break; }
+            ok &&= Number.isInteger(result[1]);
+            if (!ok) { errorText = "amount is only integer"; break; }
+          }
+          else { errorText = "string does not contain a comma"; break; }
+        }
+      }
+      setAirdropAddressAmountListError(!ok);
+      if (!ok) {
+        v.setCustomValidity(errorText);
+      }
+      valid &&= ok;
+    }
+
+    /*if (v) {
+      v.setCustomValidity("");
+      let ok = v.validity.valid;
+      if (v.value !== "") {
+        let spl = v.value.split(/\r?\n/);
         spl.forEach(function (elm) {
           ok &&= elm.includes(',');
           if (ok) {
@@ -327,106 +350,7 @@ export default function CreateAirdrop() {
         v.setCustomValidity(errorText);
       }
       valid &&= ok;
-    }
-    /*let v = airdropAddressAmountListRef?.current;
-    if (v) {
-      v.setCustomValidity("");
-      let ok = v.validity.valid;
-      if (v.value !== "") {
-        let spl = v.value.split(/\r?\n/);
-        spl.forEach(function (elm) {
-          ok &&= elm.includes(',');
-        });
-      }
-      setAirdropAddressAmountListError(!ok);
-      if (!ok) {
-        v.setCustomValidity("string does not contain a comma");
-      }
-      valid &&= ok;
-    }
-    if (valid) {
-      if (v) {
-        v.setCustomValidity("");
-        let ok = v.validity.valid;
-        if (v.value !== "") {
-          let spl = v.value.split(/\r?\n/);
-          spl.forEach(function (elm) {
-            let result: string[] = elm.split(',');
-            ok &&= result.length === 2;
-          });
-        }
-        setAirdropAddressAmountListError(!ok);
-        if (!ok) {
-          v.setCustomValidity("each line must contain two elements");
-        }
-        valid &&= ok;
-      }
-      if (v) {
-        v.setCustomValidity("");
-        let ok = v.validity.valid;
-        if (v.value !== "") {
-          let spl = v.value.split(/\r?\n/);
-          spl.forEach(function (elm) {
-            let result: string[] = elm.split(',');
-            ok &&= result[0] !== "" && result[1] !== "";
-          });
-        }
-        setAirdropAddressAmountListError(!ok);
-        if (!ok) {
-          v.setCustomValidity("address and/or amount is a blank character");
-        }
-        valid &&= ok;
-      }
-      if (v) {
-        v.setCustomValidity("");
-        let ok = v.validity.valid;
-        if (v.value !== "") {
-          let spl = v.value.split(/\r?\n/);
-          spl.forEach(function (elm) {
-            let result: string[] = elm.split(',');
-            ok &&= ethers.utils.isAddress(result[0]);
-          });
-        }
-        setAirdropAddressAmountListError(!ok);
-        if (!ok) {
-          v.setCustomValidity("address is not valid");
-        }
-        valid &&= ok;
-      }
-      if (v) {
-        v.setCustomValidity("");
-        let ok = v.validity.valid;
-        if (v.value !== "") {
-          let spl = v.value.split(/\r?\n/);
-          spl.forEach(function (elm) {
-            let result: string[] = elm.split(',');
-            ok &&= !Number.isNaN(result[1]);
-          });
-        }
-        setAirdropAddressAmountListError(!ok);
-        if (!ok) {
-          v.setCustomValidity("amount is only number");
-        }
-        valid &&= ok;
-      }
-      if (v) {
-        v.setCustomValidity("");
-        let ok = v.validity.valid;
-        if (v.value !== "") {
-          let spl = v.value.split(/\r?\n/);
-          spl.forEach(function (elm) {
-            let result: string[] = elm.split(',');
-            ok &&= Number.isInteger(result[1]);
-          });
-        }
-        setAirdropAddressAmountListError(!ok);
-        if (!ok) {
-          v.setCustomValidity("amount is only integer");
-        }
-        valid &&= ok;
-      }
     }*/
-
     return valid;
   };
 
