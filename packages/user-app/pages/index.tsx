@@ -23,7 +23,7 @@ export default function Home() {
           </Button>
           <Button
             variant="contained"
-            href="/create-merkle-tree-snapshot"
+            href="/create-merkle-tree-manual"
             sx={{ p: 1, m: 1 }}
           >
             Create merkle-tree by manual
