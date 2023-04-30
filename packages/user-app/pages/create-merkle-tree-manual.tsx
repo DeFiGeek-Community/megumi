@@ -3,7 +3,6 @@ import AppBar from "@mui/material/AppBar";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Divider from "@mui/material/Divider";
-import Grid from "@mui/material/Grid";
 import List from "@mui/material/List";
 import ListItem from "@mui/material/ListItem";
 import Popover from "@mui/material/Popover";
@@ -35,6 +34,7 @@ export default function CreateAirdrop() {
   const snapshotTokenCoefficient2Ref = useRef<HTMLInputElement>(null);
   const snapshotBlockNumberRef = useRef<HTMLInputElement>(null);
   const excludedAddressListRef = useRef<HTMLInputElement>(null);
+  const airdropAddressAmountListRef = useRef<HTMLInputElement>(null);
 
   const [airdropTokenAmountValue, setAirdropTokenAmountValue] = useState("");
   const [snapshotTokenAddress1Value, setSnapshotTokenAddress1Value] =
@@ -47,6 +47,7 @@ export default function CreateAirdrop() {
     useState("1");
   const [snapshotBlockNumberValue, setSnapshotBlockNumberValue] = useState("");
   const [excludedAddressListValue, setExcludedAddressListValue] = useState("");
+  const [airdropAddressAmountListValue, setAirdropAddressAmountListValue] = useState("");
 
   const [airdropTokenAmountError, setAirdropTokenAmountError] = useState(false);
   const [snapshotTokenAddress1Error, setSnapshotTokenAddress1Error] =
@@ -60,6 +61,8 @@ export default function CreateAirdrop() {
   const [snapshotBlockNumberError, setSnapshotBlockNumberError] =
     useState(false);
   const [excludedAddressListError, setExcludedAddressListError] =
+    useState(false);
+  const [airdropAddressAmountListError, setAirdropAddressAmountListError] =
     useState(false);
 
   const [snapshotList, setSnaphshotList] = useState<[string, BigNumber][]>([]);
@@ -188,42 +191,12 @@ export default function CreateAirdrop() {
         {deployReadyFlg ? (
           <Box sx={{ width: 0.7 }}>
             <Stack>
-              <Box sx={{ display: "flex", justifyContent: "center" }}>
+              <Box sx={{ display: "flex", justifyContent: "start" }}>
+
                 <TableContainer
                   sx={{
                     m: 2,
-                    width: 0.4,
-                    height: 500,
-                  }}
-                >
-                  <Table aria-label="simple table" stickyHeader>
-                    <TableHead>
-                      <TableRow>
-                        <TableCell colSpan={2}>Snapshot Amount</TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell>Address</TableCell>
-                        <TableCell align="right">Amount</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {snapshotList.map((elm, index) => (
-                        <TableRow key={index}>
-                          <TableCell component="th" scope="row">
-                            {elm[0]}
-                          </TableCell>
-                          <TableCell align="right">
-                            {elm[1].toString()}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
-                <TableContainer
-                  sx={{
-                    m: 2,
-                    width: 0.4,
+                    width: 0.6,
                     height: 500,
                   }}
                 >
@@ -286,92 +259,38 @@ export default function CreateAirdrop() {
   }
   const formValidation = (): boolean => {
     let valid = true;
+    let errorText = "";
 
-    let v = airdropTokenAmountRef?.current;
-    if (v) {
-      v.setCustomValidity("");
-      let ok = v.validity.valid;
-      ok &&= Number.isInteger(+v.value);
-      setAirdropTokenAmountError(!ok);
-      if (!ok) {
-        v.setCustomValidity("amount is only integer");
-      }
-      valid &&= ok;
-    }
-    v = snapshotTokenAddress1Ref?.current;
-    if (v) {
-      v.setCustomValidity("");
-      let ok = v.validity.valid;
-      ok &&= ethers.utils.isAddress(v.value);
-      setSnapshotTokenAddress1Error(!ok);
-      if (!ok) {
-        v.setCustomValidity("address is not valid");
-      }
-      valid &&= ok;
-    }
-    v = snapshotTokenAddress2Ref?.current;
-    if (v) {
-      v.setCustomValidity("");
-      let ok = v.validity.valid;
-      if (v.value !== "") {
-        ok &&= ethers.utils.isAddress(v.value);
-      }
-      setSnapshotTokenAddress2Error(!ok);
-      if (!ok) {
-        v.setCustomValidity("address is not valid");
-      }
-      valid &&= ok;
-    }
-    v = snapshotTokenCoefficient1Ref?.current;
-    if (v) {
-      v.setCustomValidity("");
-      let ok = v.validity.valid;
-      ok &&= Number.isInteger(+v.value);
-      setSnapshotTokenCoefficient1Error(!ok);
-      if (!ok) {
-        v.setCustomValidity("coefficient is only integer");
-      }
-      valid &&= ok;
-    }
-    v = snapshotTokenCoefficient2Ref?.current;
-    if (v) {
-      v.setCustomValidity("");
-      let ok = v.validity.valid;
-      ok &&= Number.isInteger(+v.value);
-      setSnapshotTokenCoefficient2Error(!ok);
-      if (!ok) {
-        v.setCustomValidity("coefficient is only integer");
-      }
-      valid &&= ok;
-    }
-    v = snapshotBlockNumberRef?.current;
-    if (v) {
-      v.setCustomValidity("");
-      let ok = v.validity.valid;
-      ok &&= Number.isInteger(+v.value);
-      setSnapshotBlockNumberError(!ok);
-      if (!ok) {
-        v.setCustomValidity("block number is only integer");
-      }
-      valid &&= ok;
-    }
-    v = excludedAddressListRef?.current;
+    let v = airdropAddressAmountListRef?.current;
     if (v) {
       v.setCustomValidity("");
       let ok = v.validity.valid;
       if (v.value !== "") {
         let spl = v.value.split(/\r?\n/);
-        spl.forEach(function (elm) {
-          ok &&= ethers.utils.isAddress(elm);
-        });
+        for (let i = 0; i < spl.length; i++) {
+          ok &&= spl[i].includes(',');
+          if (ok) {
+            let result: string[] = spl[i].split(',');
+            ok &&= result.length === 2;
+            if (!ok) { errorText = "each line must contain two elements"; break; }
+            ok &&= result[0] !== "" && result[1] !== "";
+            if (!ok) { errorText = "address and/or amount is a blank character"; break; }
+            ok &&= ethers.utils.isAddress(result[0]);
+            if (!ok) { errorText = "address is not valid"; break; }
+            ok &&= !Number.isNaN(result[1]);
+            if (!ok) { errorText = "amount is only number"; break; }
+            ok &&= Number.isInteger(Number(result[1]));
+            if (!ok) { errorText = "amount is only integer"; break; }
+          }
+          else { errorText = "string does not contain a comma"; break; }
+        }
       }
-      setExcludedAddressListError(!ok);
+      setAirdropAddressAmountListError(!ok);
       if (!ok) {
-        v.setCustomValidity("address is not valid");
+        v.setCustomValidity(errorText);
       }
       valid &&= ok;
     }
-
     return valid;
   };
 
@@ -383,11 +302,11 @@ export default function CreateAirdrop() {
   ): Promise<[{ [address: string]: BigNumber }, BigNumber]> => {
     let response = await fetch(
       "/api/token/holders?chainId=" +
-        BigNumber.from(chainId).toString() +
-        "&tokenAddress=" +
-        snapshotTokenAddress +
-        "&blockNumber=" +
-        snapshotBlockNumberValue
+      BigNumber.from(chainId).toString() +
+      "&tokenAddress=" +
+      snapshotTokenAddress +
+      "&blockNumber=" +
+      snapshotBlockNumberValue
     );
     let responseJson = (await response.json()) as holdersResponse;
     responseJson.data.map((data: { address: string; balance: string }) => {
@@ -407,7 +326,7 @@ export default function CreateAirdrop() {
     return [snapshotAmount, ttlSnapshotAmount];
   };
 
-  const useApiForWriteFile = async (airdropAmountList: airdropListData[]) => {
+  const useApiForWrittingFile = async (airdropAmountList: airdropListData[]) => {
     await fetch("/api/merkletree", {
       method: "POST",
       headers: {
@@ -433,90 +352,50 @@ export default function CreateAirdrop() {
     let ttlSnapshotAmount = BigNumber.from(0);
     let resTtlSnapshotAmount = BigNumber.from(0);
     let ttlAirdropAmount = BigNumber.from(0);
-    let airdropAmount = BigNumber.from(airdropTokenAmountValue);
-    let snapshotTokenCoefficient1 = BigNumber.from(
-      snapshotTokenCoefficient1Value
-    );
-    let snapshotTokenCoefficient2 = BigNumber.from(
-      snapshotTokenCoefficient2Value
-    );
-    if (snapshotTokenAddress2Value !== "") {
-      let response = await fetch(
-        "/api/token/decimal?chainId=" +
-          BigNumber.from(chainId).toString() +
-          "&tokenAddress=" +
-          snapshotTokenAddress1Value
-      );
-      let responseJson = (await response.json()) as decimalResponse;
-      const decimals1 = responseJson.data;
+    //let airdropAmount = BigNumber.from(airdropTokenAmountValue);
 
-      response = await fetch(
-        "/api/token/decimal?chainId=" +
-          BigNumber.from(chainId).toString() +
-          "&tokenAddress=" +
-          snapshotTokenAddress2Value
-      );
-      responseJson = (await response.json()) as decimalResponse;
-      const decimals2 = responseJson.data;
+    let v = airdropAddressAmountListRef?.current;
+    if (v) {
+      v.setCustomValidity("");
+      let ok = v.validity.valid;
+      if (v.value !== "") {
+        let spl = v.value.split(/\r?\n/);
+        spl.forEach(function (elm) {
+          let result: string[] = elm.split(',');
+          snapshotAmountDict[result[0]] = BigNumber.from(result[1]);
+        });
 
-      if (decimals1 > decimals2) {
-        snapshotTokenCoefficient2 = snapshotTokenCoefficient2.mul(
-          BigNumber.from(10).pow(decimals1 - decimals2)
+        let snapshotAmountList = Object.entries(snapshotAmountDict).sort(
+          (p1, p2) => {
+            let p1Key = p1[0];
+            let p2Key = p2[0];
+            if (p1Key < p2Key) {
+              return -1;
+            }
+            if (p1Key > p2Key) {
+              return 1;
+            }
+            return 0;
+          }
         );
-      } else if (decimals2 > decimals1) {
-        snapshotTokenCoefficient1 = snapshotTokenCoefficient1.mul(
-          BigNumber.from(10).pow(decimals2 - decimals1)
-        );
+
+        setSnaphshotList(snapshotAmountList);
+
+        snapshotAmountList.map((elm) => {
+          //let calculatedAmount = airdropAmount.mul(elm[1]).div(ttlSnapshotAmount);
+          ttlAirdropAmount = ttlAirdropAmount.add(elm[1]);
+          airdropAmountList.push({ address: elm[0], amount: elm[1] });
+        });
+
+        setAirdropList(airdropAmountList);
+
+        setTtlAirdropAmount(ttlAirdropAmount.toString());
+
+        //the cese using api
+        //useApiForWrittingFile(airdropAmountList, chainId);
+        setDeployReadyFlg(true);
       }
-
-      [resSnapshotAmount, resTtlSnapshotAmount] = await extractTokenBalance(
-        snapshotAmountDict,
-        ttlSnapshotAmount,
-        snapshotTokenAddress2Value,
-        snapshotTokenCoefficient2
-      );
-      snapshotAmountDict = resSnapshotAmount;
-      ttlSnapshotAmount = resTtlSnapshotAmount;
     }
-
-    [resSnapshotAmount, resTtlSnapshotAmount] = await extractTokenBalance(
-      snapshotAmountDict,
-      ttlSnapshotAmount,
-      snapshotTokenAddress1Value,
-      snapshotTokenCoefficient1
-    );
-    snapshotAmountDict = resSnapshotAmount;
-    ttlSnapshotAmount = resTtlSnapshotAmount;
-
-    let snapshotAmountList = Object.entries(snapshotAmountDict).sort(
-      (p1, p2) => {
-        let p1Key = p1[0];
-        let p2Key = p2[0];
-        if (p1Key < p2Key) {
-          return -1;
-        }
-        if (p1Key > p2Key) {
-          return 1;
-        }
-        return 0;
-      }
-    );
-
-    setSnaphshotList(snapshotAmountList);
-
-    snapshotAmountList.map((elm) => {
-      let calculatedAmount = airdropAmount.mul(elm[1]).div(ttlSnapshotAmount);
-      ttlAirdropAmount = ttlAirdropAmount.add(calculatedAmount);
-      airdropAmountList.push({ address: elm[0], amount: calculatedAmount });
-    });
-
-    setAirdropList(airdropAmountList);
-
-    setTtlAirdropAmount(ttlAirdropAmount.toString());
-
-    //the cese using api
-    //useApiForWrittingFile(airdropAmountList, chainId);
-    setDeployReadyFlg(true);
   };
 
   return (
@@ -542,222 +421,42 @@ export default function CreateAirdrop() {
                 <Stack
                   sx={{
                     mt: 1,
-                    width: 0.6,
+                    width: 0.7,
                   }}
                 >
-                  <Grid
-                    container
-                    sx={{
-                      m: 2,
-                    }}
-                    columnSpacing={{ xs: 2 }}
-                  >
-                    <Grid item xs={3}>
-                      <Typography
-                        sx={{
-                          m: 2,
-                        }}
-                      >
-                        Airdrop Token Amount
-                      </Typography>
-                    </Grid>
-                    <Grid item xs={6}>
-                      <TextField
-                        fullWidth
-                        id="airdrop-token-amount"
-                        variant="outlined"
-                        required
-                        defaultValue={airdropTokenAmountValue}
-                        inputProps={{ style: { textAlign: "right" } }}
-                        onChange={(e: OnChangeEvent) =>
-                          setAirdropTokenAmountValue(e.target.value)
-                        }
-                        inputRef={airdropTokenAmountRef}
-                        error={airdropTokenAmountError}
-                        helperText={
-                          airdropTokenAmountError &&
-                          airdropTokenAmountRef?.current?.validationMessage
-                        }
-                      />
-                    </Grid>
-                  </Grid>
-                  <Grid
-                    container
-                    sx={{
-                      m: 2,
-                    }}
-                    columnSpacing={{ xs: 2 }}
-                  >
-                    <Grid item xs={3}>
-                      <Typography
-                        sx={{
-                          m: 2,
-                        }}
-                      >
-                        Snapshot Block Number
-                      </Typography>
-                    </Grid>
-                    <Grid item xs={6}>
-                      <TextField
-                        id="snapshot-block-number"
-                        variant="outlined"
-                        required
-                        defaultValue={snapshotBlockNumberValue}
-                        inputProps={{ style: { textAlign: "right" } }}
-                        sx={{
-                          width: 0.5,
-                        }}
-                        onChange={(e: OnChangeEvent) =>
-                          setSnapshotBlockNumberValue(e.target.value)
-                        }
-                        inputRef={snapshotBlockNumberRef}
-                        error={snapshotBlockNumberError}
-                        helperText={
-                          snapshotBlockNumberError &&
-                          snapshotBlockNumberRef?.current?.validationMessage
-                        }
-                      />
-                    </Grid>
-                  </Grid>
-                  <Grid
-                    container
-                    sx={{
-                      m: 2,
-                    }}
-                    columnSpacing={{ xs: 1 }}
-                  >
-                    <Grid item xs={3}>
-                      <Typography
-                        sx={{
-                          m: 2,
-                        }}
-                      >
-                        Snapshot Token Address
-                      </Typography>
-                    </Grid>
-                    <Grid item xs={9}>
-                      <Grid
-                        container
-                        sx={{
-                          m: 1,
-                        }}
-                        columnSpacing={{ xs: 1 }}
-                      >
-                        <Grid item xs={6}>
-                          <TextField
-                            fullWidth
-                            label="address"
-                            id="snapshot-token-address-1"
-                            variant="outlined"
-                            required
-                            defaultValue={snapshotTokenAddress1Value}
-                            onChange={(e: OnChangeEvent) =>
-                              setSnapshotTokenAddress1Value(e.target.value)
-                            }
-                            inputRef={snapshotTokenAddress1Ref}
-                            error={snapshotTokenAddress1Error}
-                            helperText={
-                              snapshotTokenAddress1Error &&
-                              snapshotTokenAddress1Ref?.current
-                                ?.validationMessage
-                            }
-                          />
-                        </Grid>
-                        <Grid item xs={2}>
-                          <TextField
-                            fullWidth
-                            label="coefficient"
-                            id="snapshot-token-coefficient-1"
-                            variant="outlined"
-                            required
-                            defaultValue={snapshotTokenCoefficient1Value}
-                            inputProps={{ style: { textAlign: "right" } }}
-                            onChange={(e: OnChangeEvent) =>
-                              setSnapshotTokenCoefficient1Value(e.target.value)
-                            }
-                            inputRef={snapshotTokenCoefficient1Ref}
-                            error={snapshotTokenCoefficient1Error}
-                            helperText={
-                              snapshotTokenCoefficient1Error &&
-                              snapshotTokenCoefficient1Ref?.current
-                                ?.validationMessage
-                            }
-                          />
-                        </Grid>
-                      </Grid>
-                      <Grid
-                        container
-                        sx={{
-                          m: 1,
-                        }}
-                        columnSpacing={{ xs: 1 }}
-                      >
-                        <Grid item xs={6}>
-                          <TextField
-                            fullWidth
-                            label="address"
-                            id="snapshot-token-address-2"
-                            variant="outlined"
-                            defaultValue={snapshotTokenAddress2Value}
-                            onChange={(e: OnChangeEvent) =>
-                              setSnapshotTokenAddress2Value(e.target.value)
-                            }
-                            inputRef={snapshotTokenAddress2Ref}
-                            error={snapshotTokenAddress2Error}
-                            helperText={
-                              snapshotTokenAddress2Error &&
-                              snapshotTokenAddress2Ref?.current
-                                ?.validationMessage
-                            }
-                          />
-                        </Grid>
-                        <Grid item xs={2}>
-                          <TextField
-                            fullWidth
-                            label="coefficient"
-                            id="snapshot-token-coefficient-2"
-                            variant="outlined"
-                            inputProps={{ style: { textAlign: "right" } }}
-                            defaultValue={snapshotTokenCoefficient2Value}
-                            onChange={(e: OnChangeEvent) =>
-                              setSnapshotTokenCoefficient2Value(e.target.value)
-                            }
-                            inputRef={snapshotTokenCoefficient2Ref}
-                            error={snapshotTokenCoefficient2Error}
-                            helperText={
-                              snapshotTokenCoefficient2Error &&
-                              snapshotTokenCoefficient2Ref?.current
-                                ?.validationMessage
-                            }
-                          />
-                        </Grid>
-                      </Grid>
-                    </Grid>
-                  </Grid>
-
                   <Typography
                     sx={{
                       m: 2,
                     }}
                   >
-                    Excluded Address List(Separated by line breaks)
+                    Airdrop List (Separated by line breaks)<br /><br />
+
+                    Enter one line at a time in the following order: <br />
+                    address,amount<br />
+                    Don't forget the comma(,) between the address and the amount!<br /><br />
+
+                    (Input Example)<br />
+                    0x999...111,100<br />
+                    0x111...999,200<br />
+                    ...<br />
+
                   </Typography>
                   <TextField
                     id="excluded-address-list"
                     variant="outlined"
                     multiline
                     sx={{
-                      width: 0.5,
+                      width: 0.6,
                     }}
-                    defaultValue={excludedAddressListValue}
+                    defaultValue={airdropAddressAmountListValue}
                     onChange={(e: OnChangeEvent) =>
-                      setExcludedAddressListValue(e.target.value)
+                      setAirdropAddressAmountListValue(e.target.value)
                     }
-                    inputRef={excludedAddressListRef}
-                    error={excludedAddressListError}
+                    inputRef={airdropAddressAmountListRef}
+                    error={airdropAddressAmountListError}
                     helperText={
-                      excludedAddressListError &&
-                      excludedAddressListRef?.current?.validationMessage
+                      airdropAddressAmountListError &&
+                      airdropAddressAmountListRef?.current?.validationMessage
                     }
                   />
                 </Stack>
