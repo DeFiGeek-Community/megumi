@@ -309,7 +309,7 @@ export default function CreateAirdrop() {
             if (!ok) { errorText = "address is not valid"; break; }
             ok &&= !Number.isNaN(result[1]);
             if (!ok) { errorText = "amount is only number"; break; }
-            ok &&= Number.isInteger(result[1]);
+            ok &&= Number.isInteger(Number(result[1]));
             if (!ok) { errorText = "amount is only integer"; break; }
           }
           else { errorText = "string does not contain a comma"; break; }
@@ -321,36 +321,6 @@ export default function CreateAirdrop() {
       }
       valid &&= ok;
     }
-
-    /*if (v) {
-      v.setCustomValidity("");
-      let ok = v.validity.valid;
-      if (v.value !== "") {
-        let spl = v.value.split(/\r?\n/);
-        spl.forEach(function (elm) {
-          ok &&= elm.includes(',');
-          if (ok) {
-            let result: string[] = elm.split(',');
-            ok &&= result.length === 2;
-            if (!ok) { errorText = "each line must contain two elements"; }
-            ok &&= result[0] !== "" && result[1] !== "";
-            if (!ok) { errorText = "address and/or amount is a blank character"; }
-            ok &&= ethers.utils.isAddress(result[0]);
-            if (!ok) { errorText = "address is not valid"; }
-            ok &&= !Number.isNaN(result[1]);
-            if (!ok) { errorText = "amount is only number"; }
-            ok &&= Number.isInteger(result[1]);
-            if (!ok) { errorText = "amount is only integer"; }
-          }
-          else { errorText = "string does not contain a comma"; }
-        });
-      }
-      setAirdropAddressAmountListError(!ok);
-      if (!ok) {
-        v.setCustomValidity(errorText);
-      }
-      valid &&= ok;
-    }*/
     return valid;
   };
 
@@ -406,7 +376,7 @@ export default function CreateAirdrop() {
     if (chainId == null) {
       return;
     }
-    let snapshotAmountDict: { [address: string]: BigNumber } = {};
+    /*let snapshotAmountDict: { [address: string]: BigNumber } = {};
     let resSnapshotAmount: { [address: string]: BigNumber } = {};
     let airdropAmountList: airdropListData[] = [];
     let ttlSnapshotAmount = BigNumber.from(0);
@@ -491,7 +461,7 @@ export default function CreateAirdrop() {
 
     setAirdropList(airdropAmountList);
 
-    setTtlAirdropAmount(ttlAirdropAmount.toString());
+    setTtlAirdropAmount(ttlAirdropAmount.toString());*/
 
     //the cese using api
     //useApiForWrittingFile(airdropAmountList, chainId);
@@ -536,7 +506,7 @@ export default function CreateAirdrop() {
                     Don't forget the comma(,) between the address and the amount!<br /><br />
 
                     (Input Example)<br />
-                    0xaaa...zzz,100<br />
+                    0x999...111,100<br />
                     0x111...999,200<br />
                     ...<br />
 
