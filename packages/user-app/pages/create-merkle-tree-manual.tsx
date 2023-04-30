@@ -191,42 +191,12 @@ export default function CreateAirdrop() {
         {deployReadyFlg ? (
           <Box sx={{ width: 0.7 }}>
             <Stack>
-              <Box sx={{ display: "flex", justifyContent: "center" }}>
+              <Box sx={{ display: "flex", justifyContent: "start" }}>
+
                 <TableContainer
                   sx={{
                     m: 2,
-                    width: 0.4,
-                    height: 500,
-                  }}
-                >
-                  <Table aria-label="simple table" stickyHeader>
-                    <TableHead>
-                      <TableRow>
-                        <TableCell colSpan={2}>Snapshot Amount</TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell>Address</TableCell>
-                        <TableCell align="right">Amount</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {snapshotList.map((elm, index) => (
-                        <TableRow key={index}>
-                          <TableCell component="th" scope="row">
-                            {elm[0]}
-                          </TableCell>
-                          <TableCell align="right">
-                            {elm[1].toString()}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
-                <TableContainer
-                  sx={{
-                    m: 2,
-                    width: 0.4,
+                    width: 0.6,
                     height: 500,
                   }}
                 >
@@ -376,96 +346,56 @@ export default function CreateAirdrop() {
     if (chainId == null) {
       return;
     }
-    /*let snapshotAmountDict: { [address: string]: BigNumber } = {};
+    let snapshotAmountDict: { [address: string]: BigNumber } = {};
     let resSnapshotAmount: { [address: string]: BigNumber } = {};
     let airdropAmountList: airdropListData[] = [];
     let ttlSnapshotAmount = BigNumber.from(0);
     let resTtlSnapshotAmount = BigNumber.from(0);
     let ttlAirdropAmount = BigNumber.from(0);
-    let airdropAmount = BigNumber.from(airdropTokenAmountValue);
-    let snapshotTokenCoefficient1 = BigNumber.from(
-      snapshotTokenCoefficient1Value
-    );
-    let snapshotTokenCoefficient2 = BigNumber.from(
-      snapshotTokenCoefficient2Value
-    );
-    if (snapshotTokenAddress2Value !== "") {
-      let response = await fetch(
-        "/api/token/decimal?chainId=" +
-        BigNumber.from(chainId).toString() +
-        "&tokenAddress=" +
-        snapshotTokenAddress1Value
-      );
-      let responseJson = (await response.json()) as decimalResponse;
-      const decimals1 = responseJson.data;
+    //let airdropAmount = BigNumber.from(airdropTokenAmountValue);
 
-      response = await fetch(
-        "/api/token/decimal?chainId=" +
-        BigNumber.from(chainId).toString() +
-        "&tokenAddress=" +
-        snapshotTokenAddress2Value
-      );
-      responseJson = (await response.json()) as decimalResponse;
-      const decimals2 = responseJson.data;
+    let v = airdropAddressAmountListRef?.current;
+    if (v) {
+      v.setCustomValidity("");
+      let ok = v.validity.valid;
+      if (v.value !== "") {
+        let spl = v.value.split(/\r?\n/);
+        spl.forEach(function (elm) {
+          let result: string[] = elm.split(',');
+          snapshotAmountDict[result[0]] = BigNumber.from(result[1]);
+        });
 
-      if (decimals1 > decimals2) {
-        snapshotTokenCoefficient2 = snapshotTokenCoefficient2.mul(
-          BigNumber.from(10).pow(decimals1 - decimals2)
+        let snapshotAmountList = Object.entries(snapshotAmountDict).sort(
+          (p1, p2) => {
+            let p1Key = p1[0];
+            let p2Key = p2[0];
+            if (p1Key < p2Key) {
+              return -1;
+            }
+            if (p1Key > p2Key) {
+              return 1;
+            }
+            return 0;
+          }
         );
-      } else if (decimals2 > decimals1) {
-        snapshotTokenCoefficient1 = snapshotTokenCoefficient1.mul(
-          BigNumber.from(10).pow(decimals2 - decimals1)
-        );
+
+        setSnaphshotList(snapshotAmountList);
+
+        snapshotAmountList.map((elm) => {
+          //let calculatedAmount = airdropAmount.mul(elm[1]).div(ttlSnapshotAmount);
+          ttlAirdropAmount = ttlAirdropAmount.add(elm[1]);
+          airdropAmountList.push({ address: elm[0], amount: elm[1] });
+        });
+
+        setAirdropList(airdropAmountList);
+
+        setTtlAirdropAmount(ttlAirdropAmount.toString());
+
+        //the cese using api
+        //useApiForWrittingFile(airdropAmountList, chainId);
+        setDeployReadyFlg(true);
       }
-
-      [resSnapshotAmount, resTtlSnapshotAmount] = await extractTokenBalance(
-        snapshotAmountDict,
-        ttlSnapshotAmount,
-        snapshotTokenAddress2Value,
-        snapshotTokenCoefficient2
-      );
-      snapshotAmountDict = resSnapshotAmount;
-      ttlSnapshotAmount = resTtlSnapshotAmount;
     }
-
-    [resSnapshotAmount, resTtlSnapshotAmount] = await extractTokenBalance(
-      snapshotAmountDict,
-      ttlSnapshotAmount,
-      snapshotTokenAddress1Value,
-      snapshotTokenCoefficient1
-    );
-    snapshotAmountDict = resSnapshotAmount;
-    ttlSnapshotAmount = resTtlSnapshotAmount;
-
-    let snapshotAmountList = Object.entries(snapshotAmountDict).sort(
-      (p1, p2) => {
-        let p1Key = p1[0];
-        let p2Key = p2[0];
-        if (p1Key < p2Key) {
-          return -1;
-        }
-        if (p1Key > p2Key) {
-          return 1;
-        }
-        return 0;
-      }
-    );
-
-    setSnaphshotList(snapshotAmountList);
-
-    snapshotAmountList.map((elm) => {
-      let calculatedAmount = airdropAmount.mul(elm[1]).div(ttlSnapshotAmount);
-      ttlAirdropAmount = ttlAirdropAmount.add(calculatedAmount);
-      airdropAmountList.push({ address: elm[0], amount: calculatedAmount });
-    });
-
-    setAirdropList(airdropAmountList);
-
-    setTtlAirdropAmount(ttlAirdropAmount.toString());*/
-
-    //the cese using api
-    //useApiForWrittingFile(airdropAmountList, chainId);
-    setDeployReadyFlg(true);
   };
 
   return (
@@ -491,7 +421,7 @@ export default function CreateAirdrop() {
                 <Stack
                   sx={{
                     mt: 1,
-                    width: 0.6,
+                    width: 0.7,
                   }}
                 >
                   <Typography
@@ -516,7 +446,7 @@ export default function CreateAirdrop() {
                     variant="outlined"
                     multiline
                     sx={{
-                      width: 0.5,
+                      width: 0.6,
                     }}
                     defaultValue={airdropAddressAmountListValue}
                     onChange={(e: OnChangeEvent) =>
