@@ -60,7 +60,8 @@ describe("MerkleAirdrop contract", function () {
     await merkleAirdrop.registAirdropInfo(
       airdropInfo.name,
       testERC20.address,
-      airdropInfo.merkleRoot
+      airdropInfo.merkleRoot,
+      { value: ethers.utils.parseEther("0.01") }
     );
 
     return { merkleAirdrop, testERC20, owner, addr1 };
@@ -82,7 +83,8 @@ describe("MerkleAirdrop contract", function () {
         merkleAirdrop.registAirdropInfo(
           airdropInfo.name,
           testERC20.address,
-          airdropInfo.merkleRoot
+          airdropInfo.merkleRoot,
+          { value: ethers.utils.parseEther("0.01") }
         )
       ).to.not.be.reverted;
     });
@@ -96,14 +98,31 @@ describe("MerkleAirdrop contract", function () {
         merkleAirdrop.registAirdropInfo(
           name,
           testERC20.address,
-          airdropInfo.merkleRoot
+          airdropInfo.merkleRoot,
+          { value: ethers.utils.parseEther("0.01") }
         )
       ).to.not.be.reverted;
       await expect(
         merkleAirdrop.registAirdropInfo(
           name,
           testERC20.address,
-          airdropInfo.merkleRoot
+          airdropInfo.merkleRoot,
+          { value: ethers.utils.parseEther("0.01") }
+        )
+      ).to.be.reverted;
+    });
+
+    it("Should fail registAirdropInfo with invalid registFee", async function () {
+      const { merkleAirdrop, testERC20 } = await loadFixture(deployFixture);
+
+      const name = airdropInfo.name;
+
+      await expect(
+        merkleAirdrop.registAirdropInfo(
+          name,
+          testERC20.address,
+          airdropInfo.merkleRoot,
+          { value: ethers.utils.parseEther("0.1") }
         )
       ).to.be.reverted;
     });
@@ -140,7 +159,8 @@ describe("MerkleAirdrop contract", function () {
           amount,
           0,
           MaxUint,
-          signature
+          signature,
+          { value: ethers.utils.parseEther("0.01") }
         )
       ).to.not.be.reverted;
     });
@@ -259,9 +279,53 @@ describe("MerkleAirdrop contract", function () {
           claimInfo.index,
           sampleAddress,
           claimInfo.amount,
-          claimInfo.proof
+          claimInfo.proof,
+          { value: ethers.utils.parseEther("0.0002") }
         )
       ).to.not.be.reverted;
+    });
+
+    it("Should fail claim incorrect claimFee", async function () {
+      const { merkleAirdrop, testERC20, owner } = await loadFixture(
+        deployAndRegistFixture
+      );
+
+      const claimInfo = airdropInfo.claims[sampleAddress];
+      const amount = BigNumber.from(claimInfo.amount);
+      const permit = {
+        permitted: {
+          token: testERC20.address,
+          amount: amount,
+        },
+        spender: merkleAirdrop.address,
+        nonce: 2,
+        deadline: MaxUint,
+      };
+      const { domain, types, values } = SignatureTransfer.getPermitData(
+        permit,
+        PERMIT2_ADDRESS,
+        31337
+      );
+      const signature = await owner._signTypedData(domain, types, values);
+
+      await testERC20.approve(PERMIT2_ADDRESS, MaxUint);
+      await merkleAirdrop.depositAirdropToken(
+        airdropInfo.name,
+        amount,
+        2,
+        MaxUint,
+        signature
+      );
+      await expect(
+        merkleAirdrop.claim(
+          airdropInfo.name,
+          claimInfo.index,
+          sampleAddress,
+          claimInfo.amount,
+          claimInfo.proof,
+          { value: ethers.utils.parseEther("0.0001") }
+        )
+      ).to.be.reverted;
     });
 
     it("Should fail claim second time", async function () {
@@ -301,7 +365,8 @@ describe("MerkleAirdrop contract", function () {
           claimInfo.index,
           sampleAddress,
           claimInfo.amount,
-          claimInfo.proof
+          claimInfo.proof,
+          { value: ethers.utils.parseEther("0.0002") }
         )
       ).to.not.be.reverted;
 
@@ -314,6 +379,19 @@ describe("MerkleAirdrop contract", function () {
           claimInfo.proof
         )
       ).to.be.reverted;
+    });
+  });
+
+  describe("Withdraw Collected Ether", function () {
+    it("Should success by owner", async function () {
+      const { merkleAirdrop, owner } = await loadFixture(deployFixture);
+      await expect(merkleAirdrop.withdrawCollectedEther()).to.not.be.reverted;
+    });
+
+    it("Should fail by other account", async function () {
+      const { merkleAirdrop, addr1 } = await loadFixture(deployFixture);
+      await expect(merkleAirdrop.connect(addr1).withdrawCollectedEther()).to.be
+        .reverted;
     });
   });
 });

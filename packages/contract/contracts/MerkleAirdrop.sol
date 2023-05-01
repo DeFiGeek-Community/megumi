@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity ^0.8.0;
 
+import "@openzeppelin/contracts/access/Ownable.sol";
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import "./interfaces/IPermit2.sol";
@@ -10,13 +11,17 @@ error InvalidProof();
 error AirDropInfoExist();
 error AirDropInfoNotExist();
 error NotZeroRequired();
+error IncorrectAmount();
 error AmountNotEnough();
 error NotOwner();
 
-contract MerkleAirdrop {
+contract MerkleAirdrop is Ownable {
     using SafeERC20 for IERC20;
 
     IPermit2 public immutable Permit2;
+
+    uint256 public constant claimFee = 0.0001 ether;
+    uint256 public constant registFee = 0.01 ether;
 
     // This event is triggered whenever a call to #claim succeeds.
     event Claimed(
@@ -47,9 +52,10 @@ contract MerkleAirdrop {
         bytes32 name,
         address token,
         bytes32 merkleRoot
-    ) external {
+    ) external payable {
         if (isAirdropInfoExist(name)) revert AirDropInfoExist();
         if (token == address(0)) revert NotZeroRequired();
+        if (msg.value != registFee) revert IncorrectAmount();
 
         airdopInfos[name] = airdopInfo(token, msg.sender, merkleRoot, 0, 0);
     }
@@ -62,9 +68,10 @@ contract MerkleAirdrop {
         uint256 nonce,
         uint256 deadline,
         bytes calldata signature
-    ) external {
+    ) external payable {
         if (isAirdropInfoExist(name)) revert AirDropInfoExist();
         if (token == address(0)) revert NotZeroRequired();
+        if (msg.value != registFee) revert IncorrectAmount();
 
         Permit2.permitTransferFrom(
             // The permit message.
@@ -175,10 +182,11 @@ contract MerkleAirdrop {
         address account,
         uint256 amount,
         bytes32[] calldata merkleProof
-    ) external airdropInfoExist(name) {
+    ) external payable airdropInfoExist(name) {
         airdopInfo memory namedAirdopInfo = airdopInfos[name];
         if (isClaimed(name, index)) revert AlreadyClaimed();
         if (namedAirdopInfo.stockAmount < amount) revert AmountNotEnough();
+        if (msg.value != claimFee * 2) revert IncorrectAmount();
 
         // Verify the merkle proof.
         bytes32 node = keccak256(abi.encodePacked(index, account, amount));
@@ -192,8 +200,13 @@ contract MerkleAirdrop {
         _setClaimed(name, index);
         airdopInfos[name].stockAmount -= amount;
         IERC20(namedAirdopInfo.token).safeTransfer(account, amount);
+        payable(namedAirdopInfo.owner).transfer(claimFee);
 
         emit Claimed(name, index, account, amount);
+    }
+
+    function withdrawCollectedEther() external onlyOwner {
+        payable(msg.sender).transfer(address(this).balance);
     }
 
     function isAirdropInfoExist(bytes32 name) public view returns (bool) {
