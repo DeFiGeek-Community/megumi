@@ -27,48 +27,15 @@ export default function CreateAirdrop() {
   const { status, connect, account, chainId } = useMetaMask();
   const { switchChain } = useMetaMask();
 
-  const airdropTokenAmountRef = useRef<HTMLInputElement>(null);
-  const snapshotTokenAddress1Ref = useRef<HTMLInputElement>(null);
-  const snapshotTokenAddress2Ref = useRef<HTMLInputElement>(null);
-  const snapshotTokenCoefficient1Ref = useRef<HTMLInputElement>(null);
-  const snapshotTokenCoefficient2Ref = useRef<HTMLInputElement>(null);
-  const snapshotBlockNumberRef = useRef<HTMLInputElement>(null);
-  const excludedAddressListRef = useRef<HTMLInputElement>(null);
   const airdropAddressAmountListRef = useRef<HTMLInputElement>(null);
-
-  const [airdropTokenAmountValue, setAirdropTokenAmountValue] = useState("");
-  const [snapshotTokenAddress1Value, setSnapshotTokenAddress1Value] =
+  const [airdropAddressAmountListValue, setAirdropAddressAmountListValue] =
     useState("");
-  const [snapshotTokenAddress2Value, setSnapshotTokenAddress2Value] =
-    useState("");
-  const [snapshotTokenCoefficient1Value, setSnapshotTokenCoefficient1Value] =
-    useState("1");
-  const [snapshotTokenCoefficient2Value, setSnapshotTokenCoefficient2Value] =
-    useState("1");
-  const [snapshotBlockNumberValue, setSnapshotBlockNumberValue] = useState("");
-  const [excludedAddressListValue, setExcludedAddressListValue] = useState("");
-  const [airdropAddressAmountListValue, setAirdropAddressAmountListValue] = useState("");
-
-  const [airdropTokenAmountError, setAirdropTokenAmountError] = useState(false);
-  const [snapshotTokenAddress1Error, setSnapshotTokenAddress1Error] =
-    useState(false);
-  const [snapshotTokenAddress2Error, setSnapshotTokenAddress2Error] =
-    useState(false);
-  const [snapshotTokenCoefficient1Error, setSnapshotTokenCoefficient1Error] =
-    useState(false);
-  const [snapshotTokenCoefficient2Error, setSnapshotTokenCoefficient2Error] =
-    useState(false);
-  const [snapshotBlockNumberError, setSnapshotBlockNumberError] =
-    useState(false);
-  const [excludedAddressListError, setExcludedAddressListError] =
-    useState(false);
   const [airdropAddressAmountListError, setAirdropAddressAmountListError] =
     useState(false);
 
-  const [snapshotList, setSnaphshotList] = useState<[string, BigNumber][]>([]);
   const [airdropList, setAirdropList] = useState<airdropListData[]>([]);
   const [ttlAirdropAmount, setTtlAirdropAmount] = useState("");
-  const [deployReadyFlg, setDeployReadyFlg] = useState(false);
+  const [validateFlg, setValidateFlg] = useState(false);
 
   function ChainButton() {
     const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
@@ -188,16 +155,15 @@ export default function CreateAirdrop() {
   function AirdropcalculatedList() {
     return (
       <>
-        {deployReadyFlg ? (
+        {validateFlg ? (
           <Box sx={{ width: 0.7 }}>
             <Stack>
               <Box sx={{ display: "flex", justifyContent: "start" }}>
-
                 <TableContainer
                   sx={{
                     m: 2,
                     width: 0.6,
-                    height: 500,
+                    maxHeight: 500,
                   }}
                 >
                   <Table aria-label="simple table" stickyHeader>
@@ -268,21 +234,38 @@ export default function CreateAirdrop() {
       if (v.value !== "") {
         let spl = v.value.split(/\r?\n/);
         for (let i = 0; i < spl.length; i++) {
-          ok &&= spl[i].includes(',');
+          ok &&= spl[i].includes(",");
           if (ok) {
-            let result: string[] = spl[i].split(',');
+            let result: string[] = spl[i].split(",");
             ok &&= result.length === 2;
-            if (!ok) { errorText = "each line must contain two elements"; break; }
+            if (!ok) {
+              errorText = "each line must contain two elements";
+              break;
+            }
             ok &&= result[0] !== "" && result[1] !== "";
-            if (!ok) { errorText = "address and/or amount is a blank character"; break; }
+            if (!ok) {
+              errorText = "address and/or amount is a blank character";
+              break;
+            }
             ok &&= ethers.utils.isAddress(result[0]);
-            if (!ok) { errorText = "address is not valid"; break; }
+            if (!ok) {
+              errorText = "address is not valid";
+              break;
+            }
             ok &&= !Number.isNaN(result[1]);
-            if (!ok) { errorText = "amount is only number"; break; }
+            if (!ok) {
+              errorText = "amount is only number";
+              break;
+            }
             ok &&= Number.isInteger(Number(result[1]));
-            if (!ok) { errorText = "amount is only integer"; break; }
+            if (!ok) {
+              errorText = "amount is only integer";
+              break;
+            }
+          } else {
+            errorText = "string does not contain a comma";
+            break;
           }
-          else { errorText = "string does not contain a comma"; break; }
         }
       }
       setAirdropAddressAmountListError(!ok);
@@ -294,65 +277,15 @@ export default function CreateAirdrop() {
     return valid;
   };
 
-  const extractTokenBalance = async (
-    snapshotAmount: { [address: string]: BigNumber },
-    ttlSnapshotAmount: BigNumber,
-    snapshotTokenAddress: string,
-    coefficient: BigNumber
-  ): Promise<[{ [address: string]: BigNumber }, BigNumber]> => {
-    let response = await fetch(
-      "/api/token/holders?chainId=" +
-      BigNumber.from(chainId).toString() +
-      "&tokenAddress=" +
-      snapshotTokenAddress +
-      "&blockNumber=" +
-      snapshotBlockNumberValue
-    );
-    let responseJson = (await response.json()) as holdersResponse;
-    responseJson.data.map((data: { address: string; balance: string }) => {
-      if (excludedAddressListValue.includes(data.address)) {
-        return;
-      }
-      const parsedAmount = BigNumber.from(data.balance).mul(coefficient);
-      if (snapshotAmount[data.address] == undefined) {
-        snapshotAmount[data.address] = parsedAmount;
-      } else {
-        snapshotAmount[data.address] =
-          snapshotAmount[data.address].add(parsedAmount);
-      }
-      ttlSnapshotAmount = ttlSnapshotAmount.add(parsedAmount);
-    });
-
-    return [snapshotAmount, ttlSnapshotAmount];
-  };
-
-  const useApiForWrittingFile = async (airdropAmountList: airdropListData[]) => {
-    await fetch("/api/merkletree", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        name: "merkle-tree",
-        chainId: parseInt(chainId as string, 16), //5,
-        data: airdropAmountList,
-      }),
-    });
-  };
-
   const generateAirdropList = async () => {
-    setDeployReadyFlg(false);
+    setValidateFlg(false);
 
     if (chainId == null) {
       return;
     }
     let snapshotAmountDict: { [address: string]: BigNumber } = {};
-    let resSnapshotAmount: { [address: string]: BigNumber } = {};
     let airdropAmountList: airdropListData[] = [];
-    let ttlSnapshotAmount = BigNumber.from(0);
-    let resTtlSnapshotAmount = BigNumber.from(0);
     let ttlAirdropAmount = BigNumber.from(0);
-    //let airdropAmount = BigNumber.from(airdropTokenAmountValue);
 
     let v = airdropAddressAmountListRef?.current;
     if (v) {
@@ -361,7 +294,7 @@ export default function CreateAirdrop() {
       if (v.value !== "") {
         let spl = v.value.split(/\r?\n/);
         spl.forEach(function (elm) {
-          let result: string[] = elm.split(',');
+          let result: string[] = elm.split(",");
           snapshotAmountDict[result[0]] = BigNumber.from(result[1]);
         });
 
@@ -379,21 +312,14 @@ export default function CreateAirdrop() {
           }
         );
 
-        setSnaphshotList(snapshotAmountList);
-
         snapshotAmountList.map((elm) => {
-          //let calculatedAmount = airdropAmount.mul(elm[1]).div(ttlSnapshotAmount);
           ttlAirdropAmount = ttlAirdropAmount.add(elm[1]);
           airdropAmountList.push({ address: elm[0], amount: elm[1] });
         });
 
         setAirdropList(airdropAmountList);
-
         setTtlAirdropAmount(ttlAirdropAmount.toString());
-
-        //the cese using api
-        //useApiForWrittingFile(airdropAmountList, chainId);
-        setDeployReadyFlg(true);
+        setValidateFlg(true);
       }
     }
   };
@@ -429,17 +355,24 @@ export default function CreateAirdrop() {
                       m: 2,
                     }}
                   >
-                    Airdrop List (Separated by line breaks)<br /><br />
-
+                    Airdrop List (Separated by line breaks)
+                    <br />
+                    <br />
                     Enter one line at a time in the following order: <br />
-                    address,amount<br />
-                    Don't forget the comma(,) between the address and the amount!<br /><br />
-
-                    (Input Example)<br />
-                    0x999...111,100<br />
-                    0x111...999,200<br />
-                    ...<br />
-
+                    address,amount
+                    <br />
+                    Don't forget the comma(,) between the address and the
+                    amount!
+                    <br />
+                    <br />
+                    (Input Example)
+                    <br />
+                    0x999...111,100
+                    <br />
+                    0x111...999,200
+                    <br />
+                    ...
+                    <br />
                   </Typography>
                   <TextField
                     id="excluded-address-list"
@@ -472,9 +405,7 @@ export default function CreateAirdrop() {
                 <Button
                   variant="contained"
                   onClick={() => {
-                    let valid = formValidation();
-                    if (valid) {
-                      console.log("valid");
+                    if (formValidation()) {
                       generateAirdropList();
                     }
                   }}

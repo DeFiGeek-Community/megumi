@@ -12,11 +12,8 @@ export const downloadMerkleTreeJson = async (
   airdropAmount: string,
   airdropAmountList: airdropListData[]
 ) => {
-  let merkletree = JSON.stringify(
-    parseBalanceMap(airdropAmount, airdropAmountList)
-  );
   const fileName = "merkle-tree.json";
-  const data = new Blob([JSON.stringify(merkletree)], { type: "text/json" });
+  const data = new Blob([JSON.stringify(parseBalanceMap(airdropAmount, airdropAmountList))], { type: "text/json" });
   const jsonURL = window.URL.createObjectURL(data);
   const link = document.createElement("a");
   document.body.appendChild(link);
