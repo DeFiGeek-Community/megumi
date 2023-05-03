@@ -3,7 +3,7 @@ import { BigNumber, ethers, providers } from "ethers";
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse<decimalResponse>
+  res: NextApiResponse<numberResponse>
 ) {
   const query = req.query;
   const { chainId, tokenAddress } = query;
@@ -22,7 +22,7 @@ export default async function handler(
     BigNumber.from(chainId).toNumber(),
     process.env.INFURA_API_KEY as string
   );
-  let tokenContract = new ethers.Contract(
+  const tokenContract = new ethers.Contract(
     tokenAddress as string,
     decimalsAbi,
     provider

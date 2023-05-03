@@ -8,38 +8,41 @@ import List from "@mui/material/List";
 import ListItem from "@mui/material/ListItem";
 import Popover from "@mui/material/Popover";
 import Stack from "@mui/material/Stack";
-import Table from "@mui/material/Table";
-import TableBody from "@mui/material/TableBody";
-import TableCell from "@mui/material/TableCell";
-import TableContainer from "@mui/material/TableContainer";
-import TableHead from "@mui/material/TableHead";
-import TableRow from "@mui/material/TableRow";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import Head from "next/head";
 import { useCallback, useRef, useState } from "react";
-import { BigNumber, ethers } from "ethers";
+import { BigNumber, ethers, providers } from "ethers";
 import { shortenAddress } from "@/src/util";
+import {
+  MaxUint256,
+  PERMIT2_ADDRESS,
+  PermitTransferFrom,
+  SignatureTransfer,
+  TokenPermissions,
+} from "@uniswap/permit2-sdk";
+import { MERKLEAIRDROP_ADDRESSES } from "@/src/addresses";
+import { merkleAirdropAbi } from "@merkle-airdrop-tool/contract/exports/MerkleAirdrop";
 
-export default function CreateAirdrop() {
+export default function RegistAirdrop() {
   const { status, connect, account, chainId } = useMetaMask();
   const { switchChain } = useMetaMask();
 
   const airdropNameRef = useRef<HTMLInputElement>(null);
   const airdropTokenAddressRef = useRef<HTMLInputElement>(null);
-  const initialDepositAmountRef = useRef<HTMLInputElement>(null);
+  const merkleRootRef = useRef<HTMLInputElement>(null);
+  const depositAmountRef = useRef<HTMLInputElement>(null);
 
   const [airdropNameValue, setAirdropNameValue] = useState("");
   const [airdropTokenAddressValue, setAirdropTokenAddressValue] = useState("");
-  const [initialDepositAmountValue, setInitialDepositAmountValue] =
-    useState("0");
+  const [merkleRootValue, setMerkleRootValue] = useState("");
+  const [depositAmountValue, setDepositAmountValue] = useState("0");
 
   const [airdropNameError, setAirdropNameError] = useState(false);
   const [airdropTokenAddressError, setAirdropTokenAddressError] =
     useState(false);
-  const [initialDepositAmountError, setInitialDepositAmountError] =
-    useState(false);
-  const [deployReadyFlg, setDeployReadyFlg] = useState(false);
+  const [merkleRootError, setMerkleRootError] = useState(false);
+  const [depositAmountError, setDepositAmountError] = useState(false);
 
   function ChainButton() {
     const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
@@ -180,19 +183,176 @@ export default function CreateAirdrop() {
       }
       valid &&= ok;
     }
+    v = merkleRootRef?.current;
+    if (v) {
+      v.setCustomValidity("");
+      let ok = v.validity.valid;
+      try {
+        const val = ethers.utils.hexlify(v.value);
+        ok &&= val.length === 66 && ethers.utils.isHexString(val, 32);
+      } catch (e) {
+        ok = false;
+      }
+      setMerkleRootError(!ok);
+      if (!ok) {
+        v.setCustomValidity("merkleroot is not valid");
+      }
+      valid &&= ok;
+    }
+    v = depositAmountRef?.current;
+    if (v) {
+      v.setCustomValidity("");
+      let ok = v.validity.valid;
+      ok &&= Number.isInteger(+v.value);
+      setDepositAmountError(!ok);
+      if (!ok) {
+        v.setCustomValidity("depositAmount is only integer");
+      }
+      valid &&= ok;
+    }
 
     return valid;
   };
 
-  const deployAirdropInfo = async () => {
-    let response = await fetch(
-      "/api/token/decimal?chainId=" +
-        BigNumber.from(chainId).toString() +
-        "&tokenAddress=" +
-        airdropTokenAddressValue
+  const registAirdropInfo = async () => {
+    const ethereum = new ethers.providers.Web3Provider(window.ethereum);
+    const signer = ethereum.getSigner();
+    const provider = new providers.InfuraProvider(
+      BigNumber.from(chainId).toNumber(),
+      process.env.INFURA_API_KEY as string
     );
-    let decimalResponse = (await response.json()) as decimalResponse;
-    const decimal = decimalResponse.data;
+
+    const merkleAirdropAddress = MERKLEAIRDROP_ADDRESSES[chainId as string];
+
+    const merkleAirdropContract = new ethers.Contract(
+      merkleAirdropAddress,
+      merkleAirdropAbi,
+      provider
+    ).connect(signer);
+    const airdropName = ethers.utils.formatBytes32String(airdropNameValue);
+    const airdropTokenAddress = ethers.utils.getAddress(
+      airdropTokenAddressValue
+    );
+
+    const depositAmount = BigNumber.from(depositAmountValue);
+
+    if (depositAmount.gt(0)) {
+      // call registAirdropInfoWithDeposit
+      let response = await fetch(
+        "/api/token/allowance?chainId=" +
+          BigNumber.from(chainId).toString() +
+          "&tokenAddress=" +
+          airdropTokenAddressValue +
+          "&owner=" +
+          account +
+          "&spender=" +
+          PERMIT2_ADDRESS
+      );
+      let responseJson = (await response.json()) as numberResponse;
+      const allowance = BigNumber.from(responseJson.data);
+      if (allowance.lt(depositAmount)) {
+        const approveAbi = [
+          {
+            inputs: [
+              {
+                internalType: "address",
+                name: "spender",
+                type: "address",
+              },
+              {
+                internalType: "uint256",
+                name: "amount",
+                type: "uint256",
+              },
+            ],
+            name: "approve",
+            outputs: [
+              {
+                internalType: "bool",
+                name: "",
+                type: "bool",
+              },
+            ],
+            stateMutability: "nonpayable",
+            type: "function",
+          },
+        ];
+        const tokenContract = new ethers.Contract(
+          airdropTokenAddressValue as string,
+          approveAbi,
+          provider
+        ).connect(signer);
+        let tx;
+        try {
+          tx = await tokenContract.approve(PERMIT2_ADDRESS, MaxUint256);
+        } catch (e) {
+          return;
+        }
+        alert(
+          "Approve transaction Executed\nhash:\n" + tx.hash + "\nPlease wait..."
+        );
+        await provider.waitForTransaction(tx.hash);
+      }
+
+      const tp: TokenPermissions = {
+        token: airdropTokenAddress,
+        amount: depositAmount,
+      };
+      const now = Math.floor(Date.now() / 1000);
+      const nonce = BigNumber.from(
+        ethers.utils.keccak256(
+          ethers.utils.toUtf8Bytes(merkleAirdropAddress + account + now)
+        )
+      );
+      const deadline = now + 3600;
+      const pt: PermitTransferFrom = {
+        permitted: tp,
+        spender: merkleAirdropAddress,
+        nonce: nonce,
+        deadline: deadline,
+      };
+      const { domain, types, values } = SignatureTransfer.getPermitData(
+        pt,
+        PERMIT2_ADDRESS,
+        BigNumber.from(chainId).toNumber()
+      );
+
+      let signature;
+      try {
+        signature = await signer._signTypedData(domain, types, values);
+      } catch (e) {
+        return;
+      }
+      try {
+        const tx = await merkleAirdropContract.registAirdropInfoWithDeposit(
+          airdropName,
+          airdropTokenAddress,
+          merkleRootValue,
+          depositAmount,
+          nonce,
+          deadline,
+          signature,
+          { value: ethers.utils.parseEther("0.01") }
+        );
+        alert("Transaction Executed\nhash:\n" + tx.hash);
+      } catch (e) {
+        console.log(e);
+        // alert("Transaction will fail. Airdrop Name may be duplicated.");
+      }
+    } else {
+      // call registAirdropInfo
+      try {
+        const tx = await merkleAirdropContract.registAirdropInfo(
+          airdropName,
+          airdropTokenAddress,
+          merkleRootValue,
+          { value: ethers.utils.parseEther("0.01") }
+        );
+        alert("Transaction Executed\nhash:\n" + tx.hash);
+      } catch (e) {
+        alert("Transaction will fail. Airdrop Name may be duplicated.");
+      }
+    }
   };
 
   return (
@@ -291,6 +451,77 @@ export default function CreateAirdrop() {
                       />
                     </Grid>
                   </Grid>
+                  <Grid
+                    container
+                    sx={{
+                      m: 2,
+                    }}
+                    columnSpacing={{ xs: 2 }}
+                  >
+                    <Grid item xs={3}>
+                      <Typography
+                        sx={{
+                          m: 2,
+                        }}
+                      >
+                        Merkle Root
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={6}>
+                      <TextField
+                        fullWidth
+                        id="merkle-root"
+                        variant="outlined"
+                        required
+                        defaultValue={merkleRootValue}
+                        onChange={(e: OnChangeEvent) =>
+                          setMerkleRootValue(e.target.value)
+                        }
+                        inputRef={merkleRootRef}
+                        error={merkleRootError}
+                        helperText={
+                          merkleRootError &&
+                          merkleRootRef?.current?.validationMessage
+                        }
+                      />
+                    </Grid>
+                  </Grid>
+                  <Grid
+                    container
+                    sx={{
+                      m: 2,
+                    }}
+                    columnSpacing={{ xs: 2 }}
+                  >
+                    <Grid item xs={3}>
+                      <Typography
+                        sx={{
+                          m: 2,
+                        }}
+                      >
+                        Deposit Amount
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={6}>
+                      <TextField
+                        fullWidth
+                        id="deposit-amount"
+                        variant="outlined"
+                        inputProps={{ style: { textAlign: "right" } }}
+                        required
+                        defaultValue={depositAmountValue}
+                        onChange={(e: OnChangeEvent) =>
+                          setDepositAmountValue(e.target.value)
+                        }
+                        inputRef={depositAmountRef}
+                        error={depositAmountError}
+                        helperText={
+                          depositAmountError &&
+                          depositAmountRef?.current?.validationMessage
+                        }
+                      />
+                    </Grid>
+                  </Grid>
                 </Stack>
               </Box>
               <Box
@@ -304,10 +535,9 @@ export default function CreateAirdrop() {
                 <Button
                   variant="contained"
                   onClick={() => {
-                    let valid = formValidation();
-                    if (valid) {
+                    if (formValidation()) {
+                      registAirdropInfo();
                     }
-                    setDeployReadyFlg(valid);
                   }}
                 >
                   Deploy Airdrop

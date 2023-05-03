@@ -30,10 +30,10 @@ export default function Home() {
           </Button>
           <Button
             variant="contained"
-            href="/deploy-airdrop"
+            href="/regist-airdrop"
             sx={{ p: 1, m: 1 }}
           >
-            Deploy airdrop
+            Regist airdrop
           </Button>
           <Button
             variant="contained"
