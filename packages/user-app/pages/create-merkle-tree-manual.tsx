@@ -361,7 +361,7 @@ export default function CreateAirdrop() {
                     Enter one line at a time in the following order: <br />
                     address,amount
                     <br />
-                    Don't forget the comma(,) between the address and the
+                    Do not forget the comma(,) between the address and the
                     amount!
                     <br />
                     <br />
