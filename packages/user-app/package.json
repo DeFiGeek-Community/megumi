@@ -12,6 +12,7 @@
   "dependencies": {
     "@emotion/react": "^11.10.5",
     "@emotion/styled": "^11.10.5",
+    "@merkle-airdrop-tool/contract": "^1.0.0",
     "@mui/material": "^5.11.4",
     "@next/font": "13.1.2",
     "@types/node": "18.11.18",
