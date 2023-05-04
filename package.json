@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "user-app-dev": "npm run dev -w @merkle-airdrop-tool/user-app",
+    "user-app:dev": "npm run dev -w @merkle-airdrop-tool/user-app",
+    "user-app:deploy": "npm run deploy -w @merkle-airdrop-tool/user-app",
     "format": "prettier --write **/*.{js,ts,sol}"
   },
   "repository": {
