@@ -11,20 +11,17 @@ import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import Head from "next/head";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { BigNumber, ethers, providers } from "ethers";
 import { shortenAddress } from "@/src/util";
-import {
-  MaxUint256,
-  PERMIT2_ADDRESS,
-  PermitTransferFrom,
-  SignatureTransfer,
-  TokenPermissions,
-} from "@uniswap/permit2-sdk";
 import { MERKLEAIRDROP_ADDRESSES } from "@/src/addresses";
 import { merkleAirdropAbi } from "@merkle-airdrop-tool/contract/exports/MerkleAirdrop";
+import { useRouter } from "next/router";
 
 export default function ClaimAirdrop() {
+  const router = useRouter();
+  const query = router.query;
+
   const { status, connect, account, chainId } = useMetaMask();
   const { switchChain } = useMetaMask();
 
@@ -36,6 +33,16 @@ export default function ClaimAirdrop() {
 
   const [airdropNameError, setAirdropNameError] = useState(false);
   const [merkleTreeError, setMerkleTreeError] = useState(false);
+
+  useEffect(() => {
+    const { airdropname, merkletree } = query;
+    if (airdropname) {
+      setAirdropNameValue(airdropname as string);
+    }
+    if (merkletree) {
+      setMerkleTreeValue(merkletree as string);
+    }
+  }, [query]);
 
   function ChainButton() {
     const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
