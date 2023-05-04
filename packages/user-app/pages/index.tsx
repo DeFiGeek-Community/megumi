@@ -38,11 +38,7 @@ export default function Home() {
           <Button variant="contained" href="/deposit-token" sx={{ p: 1, m: 1 }}>
             Deposit Token
           </Button>
-          <Button
-            variant="contained"
-            href="/create-airdrop"
-            sx={{ p: 1, m: 1 }}
-          >
+          <Button variant="contained" href="/claim-airdrop" sx={{ p: 1, m: 1 }}>
             Claim Airdrop
           </Button>
         </Box>
