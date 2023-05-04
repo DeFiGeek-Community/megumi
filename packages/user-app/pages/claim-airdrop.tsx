@@ -209,8 +209,14 @@ export default function ClaimAirdrop() {
       return;
     }
 
-    let response = await fetch(merkleTreeValue);
-    let responseJson = await response.json();
+    let responseJson;
+    try {
+      const response = await fetch(merkleTreeValue);
+      responseJson = await response.json();
+    } catch (e) {
+      alert("merkletree URL invalid");
+      return;
+    }
     const claimer = ethers.utils.getAddress(account as string);
     const claimInfo = responseJson?.claims[claimer];
     console.log(claimInfo);
