@@ -35,6 +35,9 @@ export default function Home() {
           >
             Regist airdrop
           </Button>
+          <Button variant="contained" href="/deposit-token" sx={{ p: 1, m: 1 }}>
+            Deposit Token
+          </Button>
           <Button
             variant="contained"
             href="/create-airdrop"
