@@ -93,7 +93,7 @@ export default function Home() {
           <h3>Registration Fee</h3>
           <div>
             <p>
-              To prevent civil attacks against airdrop names, 0.01 ETH is
+              To prevent sybil attacks against airdrop names, 0.01 ETH is
               collected as a registration fee for airdrop information.
             </p>
             <p>This may seem expensive, but there is a way to recoup this.</p>
