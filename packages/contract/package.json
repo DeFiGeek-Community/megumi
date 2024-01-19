@@ -6,7 +6,8 @@
   "scripts": {
     "deploy:local": "hardhat run scripts/deploy.js --network localhost",
     "deploy:mainnet": "hardhat run scripts/deploy.js --network mainnet",
-    "deploy:goerli": "hardhat run scripts/deploy.js --network goerli"
+    "deploy:goerli": "hardhat run scripts/deploy.js --network goerli",
+    "compile": "hardhat compile --show-stack-traces"
   },
   "repository": {
     "type": "git",
