@@ -6,6 +6,7 @@
   "scripts": {
     "user-app:dev": "npm run dev -w @merkle-airdrop-tool/user-app",
     "user-app:deploy": "npm run deploy -w @merkle-airdrop-tool/user-app",
+    "contract:test": "npm run test -w @merkle-airdrop-tool/contract",
     "format": "prettier --write **/*.{js,ts,sol}"
   },
   "repository": {

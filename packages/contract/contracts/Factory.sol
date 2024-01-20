@@ -26,7 +26,7 @@ contract Factory is Ownable {
         address indexed implementionAddr
     );
 
-    function deployAuction(
+    function deployMerkleAirdrop(
         bytes32 templateName_,
         bytes32 nonce_,
         bytes calldata args_

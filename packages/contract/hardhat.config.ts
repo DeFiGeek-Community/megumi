@@ -1,11 +1,13 @@
-require("@nomicfoundation/hardhat-toolbox");
-require("@nomiclabs/hardhat-etherscan");
-require("hardhat-gas-reporter");
-require("dotenv").config();
+import { HardhatUserConfig } from "hardhat/config";
+import "@nomicfoundation/hardhat-toolbox";
+import "@nomiclabs/hardhat-ethers";
+import "@nomiclabs/hardhat-etherscan";
+import "hardhat-gas-reporter";
+import 'dotenv/config'
 
 const { INFURA_KEY, ETHERSCAN_API_KEY, PRIVATE_KEY } = process.env;
 
-module.exports = {
+const config: HardhatUserConfig = {
   solidity: {
     version: "0.8.18",
     settings: {
@@ -38,3 +40,4 @@ module.exports = {
     enabled: true,
   },
 };
+export default config;
