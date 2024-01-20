@@ -105,3 +105,5 @@ dist
 
 .vscode
 # packages/contract/artifacts/**/*
+
+packages/contract/typechain-types
