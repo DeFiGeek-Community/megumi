@@ -6,16 +6,7 @@ import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeE
 import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import "./BaseTemplate.sol";
 
-// error AlreadyClaimed();
-// error InvalidProof();
-// error AirDropInfoExist();
-// error AirDropInfoNotExist();
-// error NotZeroRequired();
-// error IncorrectAmount();
-// error AmountNotEnough();
-// error NotOwner();
-
-contract TemplateV1 is BaseTemplate {
+contract MerkleAirdropStandard is BaseTemplate {
     using SafeERC20 for IERC20;
     uint256 public depositedAmount;
     // Current stock amount
@@ -43,14 +34,21 @@ contract TemplateV1 is BaseTemplate {
         address owner_,
         bytes32 merkleRoot_,
         address token_,
-        uint32 depositAmount_
+        uint256 depositAmount_
     ) external payable onlyFactory returns (address, uint256) {
+        require(!initialized, "This contract has already been initialized");
+        initialized = true;
+
         if (owner_ == address(0)) revert NotZeroRequired();
         if (token_ == address(0)) revert NotZeroRequired();
         if (msg.value != registrationFee) revert IncorrectAmount();
         owner = owner_;
         token = token_;
         merkleRoot = merkleRoot_;
+
+        (bool success, ) = payable(feePool).call{value: msg.value}("");
+        require(success, "transfer failed");
+
         emit Deployed(
             address(this),
             owner_,
@@ -160,35 +158,31 @@ contract TemplateV1 is BaseTemplate {
     function initializeTransfer(
         address token_,
         uint256 amount_,
-        address to_,
-        // Permit2 --->
-        uint256 nonce_,
-        uint256 deadline_,
-        bytes calldata signature_ // <---
-    ) external onlyDelegateFactory {
+        address to_
+    ) external payable onlyDelegateFactory {
         // IERC20(token_).safeTransferFrom(msg.sender, to_, amount_);
-        Permit2.permitTransferFrom(
-            // The permit message.
-            IPermit2.PermitTransferFrom({
-                permitted: IPermit2.TokenPermissions({
-                    token: token_,
-                    amount: amount_
-                }),
-                nonce: nonce_,
-                deadline: deadline_
-            }),
-            // The transfer recipient and amount.
-            IPermit2.SignatureTransferDetails({
-                to: to_,
-                requestedAmount: amount_
-            }),
-            // The owner of the tokens, which must also be
-            // the signer of the message, otherwise this call
-            // will fail.
-            msg.sender,
-            // The packed signature that was the result of signing
-            // the EIP712 hash of `permit`.
-            signature_
-        );
+        // Permit2.permitTransferFrom(
+        //     // The permit message.
+        //     IPermit2.PermitTransferFrom({
+        //         permitted: IPermit2.TokenPermissions({
+        //             token: token_,
+        //             amount: amount_
+        //         }),
+        //         nonce: nonce_,
+        //         deadline: deadline_
+        //     }),
+        //     // The transfer recipient and amount.
+        //     IPermit2.SignatureTransferDetails({
+        //         to: to_,
+        //         requestedAmount: amount_
+        //     }),
+        //     // The owner of the tokens, which must also be
+        //     // the signer of the message, otherwise this call
+        //     // will fail.
+        //     msg.sender,
+        //     // The packed signature that was the result of signing
+        //     // the EIP712 hash of `permit`.
+        //     signature_
+        // );
     }
 }

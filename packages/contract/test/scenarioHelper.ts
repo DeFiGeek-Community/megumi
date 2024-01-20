@@ -1,18 +1,20 @@
 import { ethers } from "hardhat";
+import { Contract } from "ethers";
 
 /* Types */
+// TODO extract to ui workspace and import from ui package
 export const TemplateType = {
   STANDARD: "Standard",
   VESTING: "Vesting",
 } as const;
 export type TemplateType = (typeof TemplateType)[keyof typeof TemplateType];
 export type TemplateArgs = {
-  [TemplateType.STANDARD]: [string, string, string, string];
-  [TemplateType.VESTING]: [string, string, string, string, string];
+  [TemplateType.STANDARD]: [string, string, string, bigint];
+  [TemplateType.VESTING]: [string, string, string, bigint, number];
 };
 export const TemplateArgs: {[key in TemplateType]: string[]} = {
-  [TemplateType.STANDARD]: ["address", "byte32", "address", "uint256"],
-  [TemplateType.VESTING]: ["address", "byte32", "address", "uint256", "uint256"],
+  [TemplateType.STANDARD]: ["address", "bytes32", "address", "uint256"],
+  [TemplateType.VESTING]: ["address", "bytes32", "address", "uint256", "uint256"],
 }
 
 export async function sendERC20(
@@ -37,9 +39,9 @@ export async function sendEther(to: any, amountStr: string, signer: any) {
   ).wait();
 }
 
-export async function deployAirdropTemplate<T extends TemplateType>(
+export async function deployMerkleAirdrop<T extends TemplateType>(
   type: T,
-  factory: any,
+  factory: Contract,
   args: TemplateArgs[T],
   creationFee: bigint
 ) {
@@ -49,7 +51,8 @@ export async function deployAirdropTemplate<T extends TemplateType>(
     TemplateArgs[type],
     args
   );
-  const nonce = Math.random().toString()
+  
+  const nonce = ethers.utils.formatBytes32String(Math.random().toString());
   const tx = await factory.deployMerkleAirdrop(templateName, nonce, encodedArgs, { value: creationFee });
   const receipt = await tx.wait();
   const event = receipt.events.find((event: any) => event.event === "Deployed");

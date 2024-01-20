@@ -1,213 +1,194 @@
-// const { expect } = require("chai");
-// const { ethers } = require("hardhat");
-// import { loadFixture, time } from "@nomicfoundation/hardhat-network-helpers";
+import { expect } from "chai";
+import { ethers } from "hardhat";
+import { loadFixture, time } from "@nomicfoundation/hardhat-network-helpers";
+import {TemplateType, TemplateArgs, deployMerkleAirdrop} from "./scenarioHelper";
+import { SignatureTransfer, PERMIT2_ADDRESS } from "@uniswap/permit2-sdk";
 
-// describe("Yamawake Dapp", function () {
-//   const templateName = ethers.utils.formatBytes32String("TemplateV1");
-//   const initialSupply = ethers.utils.parseEther("1000");
+describe("Factory", function () {
+  const templateName = ethers.utils.formatBytes32String(TemplateType.STANDARD);
+  const initialSupply = ethers.utils.parseEther("1000");
 
-//   const DAY = 24 * 60 * 60;
+  async function deployFactoryAndFeePoolFixture() {
+    const [owner, addr1, addr2] = await ethers.getSigners();
 
-//   async function deployFactoryAndFeePoolFixture() {
-//     const [owner, addr1, addr2] = await ethers.getSigners();
+    const Factory = await ethers.getContractFactory("Factory");
+    const factory = await Factory.deploy();
+    await factory.deployed();
+    const FeePool = await ethers.getContractFactory("FeePool");
+    const feePool = await FeePool.deploy();
+    await feePool.deployed();
 
-//     const Factory = await ethers.getContractFactory("Factory");
-//     const factory = await Factory.deploy();
-//     await factory.deployed();
-//     const FeePool = await ethers.getContractFactory("FeePool");
-//     const feePool = await FeePool.deploy();
-//     await feePool.deployed();
+    return { factory, feePool, owner, addr1, addr2 };
+  }
 
-//     return { factory, feePool, owner, addr1, addr2 };
-//   }
+  async function deployFactoryAndTemplateFixture() {
+    const { factory, feePool, owner, addr1, addr2 } =
+      await loadFixture(deployFactoryAndFeePoolFixture);
 
-//   async function deployDistributorFixture() {
-//     const { factory, feePool, owner, addr1, addr2 } = await loadFixture(
-//       deployFactoryAndFeePoolFixture,
-//     );
-//     const YMWK = await ethers.getContractFactory("YMWK");
-//     const ymwk = await YMWK.deploy();
-//     await ymwk.deployed();
+    const Template = await ethers.getContractFactory(`MerkleAirdrop${TemplateType.STANDARD}`);
+    const template = await Template.deploy(
+      factory.address,
+      feePool.address,
+      PERMIT2_ADDRESS
+    );
+    await template.deployed();
 
-//     const Distributor = await ethers.getContractFactory("Distributor");
-//     const distributor = await Distributor.deploy(factory.address, ymwk.address);
-//     await distributor.deployed();
+    await factory.addTemplate(
+      templateName,
+      template.address,
+      Template.interface.getSighash("initialize"),
+      Template.interface.getSighash("initializeTransfer"),
+    );
 
-//     return { factory, feePool, distributor, ymwk, owner, addr1, addr2 };
-//   }
+    return {
+      factory,
+      feePool,
+      template,
+      owner,
+      addr1,
+      addr2,
+    };
+  }
 
-//   async function deployFactoryAndTemplateFixture() {
-//     const { factory, feePool, distributor, ymwk, owner, addr1, addr2 } =
-//       await loadFixture(deployDistributorFixture);
+  describe("deploy", function () {
+    it("constructor_success_1", async function () {
+      await loadFixture(deployFactoryAndFeePoolFixture);
+    });
+  });
 
-//     const Template = await ethers.getContractFactory("TemplateV1");
-//     const template = await Template.deploy(
-//       factory.address,
-//       feePool.address,
-//       distributor.address,
-//     );
-//     await template.deployed();
+  describe("addTemplate", function () {
+    it("addTemplate_success_1", async function () {
+      await loadFixture(deployFactoryAndTemplateFixture);
+    });
 
-//     await factory.addTemplate(
-//       templateName,
-//       template.address,
-//       Template.interface.getSighash("initialize"),
-//       Template.interface.getSighash("initializeTransfer"),
-//     );
+    it("addTemplate_fail_1", async function () {
+      const { factory, template, addr1 } = await loadFixture(
+        deployFactoryAndTemplateFixture,
+      );
+      const templateName2 = ethers.utils.hexZeroPad(
+        ethers.utils.hexlify(ethers.utils.toUtf8Bytes("sale2")),
+        32,
+      );
+      await expect(
+        factory
+          .connect(addr1)
+          .addTemplate(
+            templateName2,
+            template.address,
+            template.interface.getSighash("initialize"),
+            template.interface.getSighash("initializeTransfer"),
+          ),
+      ).to.be.reverted;
+    });
 
-//     return {
-//       factory,
-//       feePool,
-//       distributor,
-//       ymwk,
-//       template,
-//       owner,
-//       addr1,
-//       addr2,
-//     };
-//   }
+    it("addTemplate_fail_2", async function () {
+      const { factory, template } = await loadFixture(
+        deployFactoryAndTemplateFixture,
+      );
+      await expect(
+        factory.addTemplate(
+          templateName,
+          template.address,
+          template.interface.getSighash("initialize"),
+          template.interface.getSighash("initializeTransfer"),
+        ),
+      ).to.be.reverted;
+    });
+  });
 
-//   describe("deploy", function () {
-//     it("constructor_success_1", async function () {
-//       await loadFixture(deployFactoryAndFeePoolFixture);
-//     });
-//   });
+  describe("removeTemplate", function () {
+    it("removeTemplate_success_1", async function () {
+      const { factory } = await loadFixture(deployFactoryAndTemplateFixture);
+      await factory.removeTemplate(templateName);
+      const templateInfo = await factory.templates(templateName);
+      expect(templateInfo[0]).to.equal(ethers.constants.AddressZero);
+    });
 
-//   describe("addTemplate", function () {
-//     it("addTemplate_success_1", async function () {
-//       await loadFixture(deployFactoryAndTemplateFixture);
-//     });
+    it("removeTemplate_success_2", async function () {
+      const { factory, template, addr1 } = await loadFixture(
+        deployFactoryAndTemplateFixture,
+      );
+      const notRegisteredTemplateName =
+        "0x11116c6554656d706c6174655631000000000000000000000000000000000000";
+      await factory.removeTemplate(notRegisteredTemplateName);
+      const templateInfo = await factory.templates(templateName);
+      const notRegisteredtemplateInfo = await factory.templates(
+        notRegisteredTemplateName,
+      );
+      expect(templateInfo[0]).to.equal(template.address);
+      expect(notRegisteredtemplateInfo[0]).to.equal(
+        ethers.constants.AddressZero,
+      );
+    });
 
-//     it("addTemplate_fail_1", async function () {
-//       const { factory, template, addr1 } = await loadFixture(
-//         deployFactoryAndTemplateFixture,
-//       );
-//       const templateName2 = ethers.utils.hexZeroPad(
-//         ethers.utils.hexlify(ethers.utils.toUtf8Bytes("sale2")),
-//         32,
-//       );
-//       await expect(
-//         factory
-//           .connect(addr1)
-//           .addTemplate(
-//             templateName2,
-//             template.address,
-//             template.interface.getSighash("initialize"),
-//             template.interface.getSighash("initializeTransfer"),
-//           ),
-//       ).to.be.reverted;
-//     });
+    it("removeTemplate_fail_1", async function () {
+      const { factory, template, addr1 } = await loadFixture(
+        deployFactoryAndTemplateFixture,
+      );
+      await expect(factory.connect(addr1).removeTemplate(templateName)).to.be
+        .reverted;
+    });
+  });
 
-//     it("addTemplate_fail_2", async function () {
-//       const { factory, template } = await loadFixture(
-//         deployFactoryAndTemplateFixture,
-//       );
-//       await expect(
-//         factory.addTemplate(
-//           templateName,
-//           template.address,
-//           template.interface.getSighash("initialize"),
-//           template.interface.getSighash("initializeTransfer"),
-//         ),
-//       ).to.be.reverted;
-//     });
-//   });
+  describe("deployMerkleAirdrop", function () {
+    it("deployMerkleAirdrop_success_1", async function () {
+      const { factory, owner } = await loadFixture(
+        deployFactoryAndTemplateFixture,
+      );
+      const Token = await ethers.getContractFactory("TestERC20");
+      const token = await Token.deploy("", "", initialSupply);
+      await token.deployed();
 
-//   describe("removeTemplate", function () {
-//     it("removeTemplate_success_1", async function () {
-//       const { factory } = await loadFixture(deployFactoryAndTemplateFixture);
-//       await factory.removeTemplate(templateName);
-//       const templateInfo = await factory.templates(templateName);
-//       await expect(templateInfo[0]).to.equal(ethers.constants.AddressZero);
-//     });
+      const depositAmount = ethers.utils.parseEther("1");
+      await token.approve(factory.address, depositAmount);
 
-//     it("removeTemplate_success_2", async function () {
-//       const { factory, template, addr1 } = await loadFixture(
-//         deployFactoryAndTemplateFixture,
-//       );
-//       const notRegisteredTemplateName =
-//         "0x11116c6554656d706c6174655631000000000000000000000000000000000000";
-//       await factory.removeTemplate(notRegisteredTemplateName);
-//       const templateInfo = await factory.templates(templateName);
-//       const notRegisteredtemplateInfo = await factory.templates(
-//         notRegisteredTemplateName,
-//       );
-//       await expect(templateInfo[0]).to.equal(template.address);
-//       await expect(notRegisteredtemplateInfo[0]).to.equal(
-//         ethers.constants.AddressZero,
-//       );
-//     });
+    //   const result = await deployMerkleAirdrop(TemplateType.STANDARD, factory, [
+    //     owner.address,
+    //     ethers.utils.formatBytes32String("test"),
+    //     token.address,
+    //     depositAmount.toBigInt(),
+    //   ],
+    //   ethers.utils.parseEther("0.01").toBigInt())
 
-//     it("removeTemplate_fail_1", async function () {
-//       const { factory, template, addr1 } = await loadFixture(
-//         deployFactoryAndTemplateFixture,
-//       );
-//       await expect(factory.connect(addr1).removeTemplate(templateName)).to.be
-//         .reverted;
-//     });
-//   });
+      await expect(deployMerkleAirdrop(TemplateType.STANDARD, factory, [
+        owner.address,
+        ethers.utils.formatBytes32String("test"),
+        token.address,
+        depositAmount.toBigInt(),
+      ],
+      ethers.utils.parseEther("0.01").toBigInt())).to.not.be
+        .reverted;
+    });
 
-//   describe("deployAuction", function () {
-//     it("deployAuction_success_1", async function () {
-//       const { factory, owner } = await loadFixture(
-//         deployFactoryAndTemplateFixture,
-//       );
-//       const Token = await ethers.getContractFactory("SampleToken");
-//       const token = await Token.deploy(initialSupply);
-//       await token.deployed();
+    // 登録されていないテンプレートでのセール立ち上げ
+    it("deployMerkleAirdrop_fail_1", async function () {
+      const { factory, owner } = await loadFixture(
+        deployFactoryAndTemplateFixture,
+      );
+      const Token = await ethers.getContractFactory("TestERC20");
+      const token = await Token.deploy("", "", initialSupply);
+      await token.deployed();
 
-//       const allocatedAmount = ethers.utils.parseEther("1");
-//       await token.approve(factory.address, allocatedAmount);
-//       const now = await time.latest();
+      const depositAmount = ethers.utils.parseEther("1");
+      await token.approve(factory.address, depositAmount);
 
-//       const abiCoder = ethers.utils.defaultAbiCoder;
-//       const args = abiCoder.encode(
-//         ["address", "uint256", "uint256", "address", "uint256", "uint256"],
-//         [
-//           owner.address,
-//           now + DAY,
-//           DAY,
-//           token.address,
-//           allocatedAmount,
-//           ethers.utils.parseEther("0.1"),
-//         ],
-//       );
+      const abiCoder = ethers.utils.defaultAbiCoder;
+      const args = abiCoder.encode(
+        TemplateArgs[TemplateType.STANDARD],
+        [
+            owner.address,
+            ethers.utils.formatBytes32String("test"),
+            token.address,
+            depositAmount.toBigInt(),
+        ],
+      );
 
-//       await expect(factory.deployAuction(templateName, args)).to.not.be
-//         .reverted;
-//     });
-
-//     // 登録されていないテンプレートでのセール立ち上げ
-//     it("deployAuction_fail_1", async function () {
-//       const { factory, owner } = await loadFixture(
-//         deployFactoryAndTemplateFixture,
-//       );
-//       const Token = await ethers.getContractFactory("SampleToken");
-//       const token = await Token.deploy(initialSupply);
-//       await token.deployed();
-
-//       const allocatedAmount = ethers.utils.parseEther("1");
-//       await token.approve(factory.address, allocatedAmount);
-//       const now = await time.latest();
-
-//       const abiCoder = ethers.utils.defaultAbiCoder;
-//       const args = abiCoder.encode(
-//         ["address", "uint256", "uint256", "address", "uint256", "uint256"],
-//         [
-//           owner.address,
-//           now + DAY,
-//           DAY,
-//           token.address,
-//           allocatedAmount,
-//           ethers.utils.parseEther("0.1"),
-//         ],
-//       );
-
-//       const notRegisteredTemplateName =
-//         "0x11116c6554656d706c6174655631000000000000000000000000000000000000";
-//       await expect(
-//         factory.deployAuction(notRegisteredTemplateName, args),
-//       ).to.be.revertedWith("No such template in the list.");
-//     });
-//   });
-// });
+      const notRegisteredTemplateName =
+        "0x11116c6554656d706c6174655631000000000000000000000000000000000000";
+        const nonce = ethers.utils.formatBytes32String(Math.random().toString());
+      await expect(
+        factory.deployMerkleAirdrop(notRegisteredTemplateName, nonce, args),
+      ).to.be.revertedWith("No such template in the list.");
+    });
+  });
+});
