@@ -17,14 +17,11 @@ const codec = new ethers.utils.AbiCoder();
 
 export function encode(
   types: string[],
-  values: (number | BigNumber | string)[],
+  values: (number | BigNumber | string)[]
 ) {
   return codec.encode(types, values);
 }
-export function decode(
-  types: string[],
-  values: BytesLike,
-) {
+export function decode(types: string[], values: BytesLike) {
   return codec.decode(types, values);
 }
 

@@ -17,8 +17,18 @@ The following assumes the use of `node@>=16`.
 
 ## Install Dependencies
 
-`npm i`
+```bash
+npm i
+```
 
 ## Run interface
 
-`npm run user-app-dev`
+```bash
+npm run user-app-dev
+```
+
+## Run tests for contracts
+
+```bash
+npm run contract:test
+```

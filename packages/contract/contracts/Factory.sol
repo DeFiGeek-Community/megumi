@@ -55,11 +55,7 @@ contract Factory is Ownable {
         // Skip if transferSignature is empty
         if (templateInfo.transferSignature != bytes4(0)) {
             (success, result) = deployedAddr.delegatecall(
-                bytes.concat(
-                    templateInfo.transferSignature,
-                    result,
-                    abi.encode(deployedAddr)
-                )
+                bytes.concat(templateInfo.transferSignature, result)
             );
             if (!success) {
                 assembly {

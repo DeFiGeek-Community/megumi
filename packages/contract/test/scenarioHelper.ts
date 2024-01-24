@@ -9,13 +9,49 @@ export const TemplateType = {
 } as const;
 export type TemplateType = (typeof TemplateType)[keyof typeof TemplateType];
 export type TemplateArgs = {
-  [TemplateType.STANDARD]: [string, string, string, bigint];
-  [TemplateType.VESTING]: [string, string, string, bigint, number];
+  [TemplateType.STANDARD]: [
+    string,
+    string,
+    string,
+    bigint,
+    number,
+    number,
+    string
+  ];
+  [TemplateType.VESTING]: [
+    string,
+    string,
+    string,
+    bigint,
+    number,
+    number,
+    number,
+    string
+  ];
 };
-export const TemplateArgs: {[key in TemplateType]: string[]} = {
-  [TemplateType.STANDARD]: ["address", "bytes32", "address", "uint256"],
-  [TemplateType.VESTING]: ["address", "bytes32", "address", "uint256", "uint256"],
-}
+export const TemplateArgs: { [key in TemplateType]: string[] } = {
+  // owner_, merkleRoot_, token_, depositAmount_, nonce_, deadline_, signature_
+  [TemplateType.STANDARD]: [
+    "address",
+    "bytes32",
+    "address",
+    "uint256",
+    "uint256",
+    "uint256",
+    "bytes",
+  ],
+  // owner_, merkleRoot_, token_, depositAmount_, vesting, nonce_, deadline_, signature_
+  [TemplateType.VESTING]: [
+    "address",
+    "bytes32",
+    "address",
+    "uint256",
+    "uint256",
+    "uint256",
+    "uint256",
+    "bytes",
+  ],
+};
 
 export async function sendERC20(
   erc20contract: any,
@@ -43,17 +79,20 @@ export async function deployMerkleAirdrop<T extends TemplateType>(
   type: T,
   factory: Contract,
   args: TemplateArgs[T],
-  creationFee: bigint
+  creationFee: bigint,
+  uuid?: string // nonce for create2
 ) {
   const templateName = ethers.utils.formatBytes32String(type);
   const abiCoder = ethers.utils.defaultAbiCoder;
-  const encodedArgs: string = abiCoder.encode(
-    TemplateArgs[type],
-    args
+  const encodedArgs: string = abiCoder.encode(TemplateArgs[type], args);
+
+  uuid = uuid ?? ethers.utils.formatBytes32String(Math.random().toString());
+  const tx = await factory.deployMerkleAirdrop(
+    templateName,
+    uuid,
+    encodedArgs,
+    { value: creationFee }
   );
-  
-  const nonce = ethers.utils.formatBytes32String(Math.random().toString());
-  const tx = await factory.deployMerkleAirdrop(templateName, nonce, encodedArgs, { value: creationFee });
   const receipt = await tx.wait();
   const event = receipt.events.find((event: any) => event.event === "Deployed");
   const [, templateAddr] = event.args;

@@ -1,16 +1,19 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity ^0.8.18;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
+import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import "../interfaces/IPermit2.sol";
 
 contract BaseTemplate {
+    using SafeERC20 for IERC20;
+
     error AlreadyClaimed();
     error InvalidProof();
     error NotZeroRequired();
     error IncorrectAmount();
     error AmountNotEnough();
-    error NotOwner();
+
     /// Flags that manage instance initialization
     bool initialized;
     IPermit2 public immutable Permit2;
@@ -19,19 +22,18 @@ contract BaseTemplate {
 
     address public owner;
     bytes32 public merkleRoot;
-    address public token;
     /// @notice Record deployed parameters
     /// @dev
     /// @param deployedAddress Deployed address of merkle distributor
     /// @param owner Merkle distributor Owner address
     /// @param merkleRoot Target merkle root
-    /// @param token Airdrop token address
+    /// @param airdropTokens Airdrop token addresses
     /// @param args Concatenate template-specific parameters to bytes
     event Deployed(
         address deployedAddress,
         address owner,
         bytes32 merkleRoot,
-        address token,
+        bytes airdropTokens,
         bytes args
     );
 
