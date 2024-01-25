@@ -223,11 +223,4 @@ contract MerkleAirdropStandard is BaseTemplate {
 
         emit Claimed(index_, account_, amount_);
     }
-
-    function withdrawCollectedEther() external onlyOwner {
-        (bool success, ) = payable(msg.sender).call{
-            value: address(this).balance
-        }("");
-        require(success, "Withdraw failed");
-    }
 }

@@ -441,17 +441,4 @@ describe("MerkleAirdrop contract", function () {
       ).to.be.reverted;
     });
   });
-
-  describe("Withdraw Collected Ether", function () {
-    it("Should success by owner", async function () {
-      const { merkleAirdrop } = await loadFixture(deployAirdropFixture);
-      await expect(merkleAirdrop.withdrawCollectedEther()).to.not.be.reverted;
-    });
-
-    it("Should fail by other account", async function () {
-      const { merkleAirdrop, addr1 } = await loadFixture(deployAirdropFixture);
-      await expect(merkleAirdrop.connect(addr1).withdrawCollectedEther()).to.be
-        .reverted;
-    });
-  });
 });
