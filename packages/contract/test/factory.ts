@@ -2,11 +2,8 @@ import { expect } from "chai";
 import { ethers } from "hardhat";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { PERMIT2_ADDRESS } from "@uniswap/permit2-sdk";
-import {
-  TemplateType,
-  TemplateArgs,
-  deployMerkleAirdrop,
-} from "./scenarioHelper";
+import { deployMerkleAirdrop } from "./lib/scenarioHelper";
+import { TemplateType, TemplateArgs } from "./lib/types";
 
 describe("Factory", function () {
   const templateName = ethers.utils.formatBytes32String(TemplateType.STANDARD);

@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import { ethers } from "hardhat";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
-import { sendEther } from "./scenarioHelper";
+import { sendEther } from "./lib/scenarioHelper";
 
 describe("FeePool", function () {
   async function deployFactoryAndFeePoolFixture() {

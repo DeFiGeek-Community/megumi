@@ -1,4 +1,4 @@
-import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
+import { loadFixture, time } from "@nomicfoundation/hardhat-network-helpers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
 import { BigNumber } from "ethers";
@@ -7,8 +7,10 @@ import { deployMerkleAirdrop } from "./lib/scenarioHelper";
 import { MaxUint, sampleAddress, airdropInfo } from "./lib/constants";
 import { TemplateType } from "./lib/types";
 
-describe("MerkleAirdrop contract", function () {
-  const templateName = ethers.utils.formatBytes32String(TemplateType.STANDARD);
+describe("MerkleAirdropLinearVesting contract", function () {
+  const templateName = ethers.utils.formatBytes32String(
+    TemplateType.LINEAR_VESTING
+  );
   const initialSupply = ethers.utils.parseEther("1000");
 
   async function deployFactoryAndFeePoolFixture() {
@@ -30,7 +32,7 @@ describe("MerkleAirdrop contract", function () {
     );
 
     const Template = await ethers.getContractFactory(
-      `MerkleAirdrop${TemplateType.STANDARD}`
+      `MerkleAirdrop${TemplateType.LINEAR_VESTING}`
     );
     const template = await Template.deploy(
       factory.address,
@@ -68,12 +70,13 @@ describe("MerkleAirdrop contract", function () {
     const data = await loadFixture(deployFactoryAndTemplateFixture);
 
     const merkleAirdrop = await deployMerkleAirdrop(
-      TemplateType.STANDARD,
+      TemplateType.LINEAR_VESTING,
       data.factory,
       [
         data.owner.address,
         airdropInfo.merkleRoot,
         data.testERC20.address,
+        3600 * 24 * 100, // 100 day
         0n,
         0,
         0,
@@ -104,12 +107,13 @@ describe("MerkleAirdrop contract", function () {
       );
 
       const merkleAirdrop = await deployMerkleAirdrop(
-        TemplateType.STANDARD,
+        TemplateType.LINEAR_VESTING,
         factory,
         [
           owner.address,
           airdropInfo.merkleRoot,
           testERC20.address,
+          3600 * 24 * 100, // 100 day
           0n,
           0,
           0,
@@ -128,12 +132,13 @@ describe("MerkleAirdrop contract", function () {
 
       await expect(
         deployMerkleAirdrop(
-          TemplateType.STANDARD,
+          TemplateType.LINEAR_VESTING,
           factory,
           [
             owner.address,
             airdropInfo.merkleRoot,
             testERC20.address,
+            3600 * 24 * 100, // 100 day
             0n,
             0,
             0,
@@ -145,12 +150,13 @@ describe("MerkleAirdrop contract", function () {
       ).to.not.be.reverted;
       await expect(
         deployMerkleAirdrop(
-          TemplateType.STANDARD,
+          TemplateType.LINEAR_VESTING,
           factory,
           [
             owner.address,
             airdropInfo.merkleRoot,
             testERC20.address,
+            3600 * 24 * 100, // 100 day
             0n,
             0,
             0,
@@ -169,12 +175,13 @@ describe("MerkleAirdrop contract", function () {
 
       await expect(
         deployMerkleAirdrop(
-          TemplateType.STANDARD,
+          TemplateType.LINEAR_VESTING,
           factory,
           [
             owner.address,
             airdropInfo.merkleRoot,
             testERC20.address,
+            3600 * 24 * 100, // 100 day
             0n,
             0,
             0,
@@ -214,12 +221,13 @@ describe("MerkleAirdrop contract", function () {
       await testERC20.approve(PERMIT2_ADDRESS, MaxUint);
 
       const airdrop = await deployMerkleAirdrop(
-        TemplateType.STANDARD,
+        TemplateType.LINEAR_VESTING,
         factory,
         [
           owner.address,
           airdropInfo.merkleRoot,
           testERC20.address,
+          3600 * 24 * 100, // 100 day
           amount,
           0, // nonce for permit
           deadline, // deadline
@@ -241,12 +249,13 @@ describe("MerkleAirdrop contract", function () {
       const claimInfo = airdropInfo.claims[sampleAddress];
 
       const airdrop = await deployMerkleAirdrop(
-        TemplateType.STANDARD,
+        TemplateType.LINEAR_VESTING,
         factory,
         [
           owner.address,
           airdropInfo.merkleRoot,
           testERC20.address,
+          3600 * 24 * 100, // 100 day
           0n,
           0,
           0,
@@ -343,6 +352,9 @@ describe("MerkleAirdrop contract", function () {
 
       await testERC20.approve(PERMIT2_ADDRESS, MaxUint);
       await merkleAirdrop.depositAirdropToken(amount, 2, MaxUint, signature);
+
+      await time.increase(3600 * 24 * 100);
+
       await expect(
         merkleAirdrop.claim(
           claimInfo.index,
@@ -424,7 +436,42 @@ describe("MerkleAirdrop contract", function () {
           claimInfo.proof,
           { value: ethers.utils.parseEther("0.0002") }
         )
+      ).revertedWithCustomError(merkleAirdrop, "NothingToClaim");
+
+      await time.increase(3600 * 24 * 50);
+
+      await expect(
+        merkleAirdrop.claim(
+          claimInfo.index,
+          sampleAddress,
+          claimInfo.amount,
+          claimInfo.proof,
+          { value: ethers.utils.parseEther("0.0002") }
+        )
       ).to.not.be.reverted;
+      expect(await testERC20.balanceOf(sampleAddress)).to.be.eq(50);
+
+      await time.increase(3600 * 24 * 50);
+
+      await expect(
+        merkleAirdrop.claim(
+          claimInfo.index,
+          sampleAddress,
+          claimInfo.amount,
+          claimInfo.proof,
+          { value: ethers.utils.parseEther("0.0002") }
+        )
+      ).to.be.revertedWithCustomError(merkleAirdrop, "IncorrectAmount");
+
+      await expect(
+        merkleAirdrop.claim(
+          claimInfo.index,
+          sampleAddress,
+          claimInfo.amount,
+          claimInfo.proof
+        )
+      ).to.not.be.reverted;
+      expect(await testERC20.balanceOf(sampleAddress)).to.be.eq(100);
 
       await expect(
         merkleAirdrop.claim(
