@@ -2,14 +2,12 @@ import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
 import { BigNumber } from "ethers";
-import { SignatureTransfer, PERMIT2_ADDRESS } from "@uniswap/permit2-sdk";
 import { deployMerkleAirdrop } from "./lib/scenarioHelper";
 import { MaxUint, sampleAddress, airdropInfo } from "./lib/constants";
 import { TemplateType } from "./lib/types";
 
-describe("MerkleAirdrop contract", function () {
+describe("MerkleAirdropStandard contract", function () {
   const templateName = ethers.utils.formatBytes32String(TemplateType.STANDARD);
-  const initialSupply = ethers.utils.parseEther("1000");
 
   async function deployFactoryAndFeePoolFixture() {
     const [owner, addr1, addr2] = await ethers.getSigners();
@@ -32,11 +30,7 @@ describe("MerkleAirdrop contract", function () {
     const Template = await ethers.getContractFactory(
       `MerkleAirdrop${TemplateType.STANDARD}`
     );
-    const template = await Template.deploy(
-      factory.address,
-      feePool.address,
-      PERMIT2_ADDRESS
-    );
+    const template = await Template.deploy(factory.address, feePool.address);
     await template.deployed();
 
     await factory.addTemplate(
@@ -70,15 +64,7 @@ describe("MerkleAirdrop contract", function () {
     const merkleAirdrop = await deployMerkleAirdrop(
       TemplateType.STANDARD,
       data.factory,
-      [
-        data.owner.address,
-        airdropInfo.merkleRoot,
-        data.testERC20.address,
-        0n,
-        0,
-        0,
-        "0x00",
-      ],
+      [data.owner.address, airdropInfo.merkleRoot, data.testERC20.address, 0n],
       ethers.utils.parseEther("0.01").toBigInt(),
       airdropInfo.uuid
     );
@@ -106,15 +92,7 @@ describe("MerkleAirdrop contract", function () {
       const merkleAirdrop = await deployMerkleAirdrop(
         TemplateType.STANDARD,
         factory,
-        [
-          owner.address,
-          airdropInfo.merkleRoot,
-          testERC20.address,
-          0n,
-          0,
-          0,
-          "0x00",
-        ],
+        [owner.address, airdropInfo.merkleRoot, testERC20.address, 0n],
         ethers.utils.parseEther("0.01").toBigInt()
       );
 
@@ -130,15 +108,7 @@ describe("MerkleAirdrop contract", function () {
         deployMerkleAirdrop(
           TemplateType.STANDARD,
           factory,
-          [
-            owner.address,
-            airdropInfo.merkleRoot,
-            testERC20.address,
-            0n,
-            0,
-            0,
-            "0x00",
-          ],
+          [owner.address, airdropInfo.merkleRoot, testERC20.address, 0n],
           ethers.utils.parseEther("0.01").toBigInt(),
           airdropInfo.uuid
         )
@@ -147,15 +117,7 @@ describe("MerkleAirdrop contract", function () {
         deployMerkleAirdrop(
           TemplateType.STANDARD,
           factory,
-          [
-            owner.address,
-            airdropInfo.merkleRoot,
-            testERC20.address,
-            0n,
-            0,
-            0,
-            "0x00",
-          ],
+          [owner.address, airdropInfo.merkleRoot, testERC20.address, 0n],
           ethers.utils.parseEther("0.01").toBigInt(),
           airdropInfo.uuid
         )
@@ -171,15 +133,7 @@ describe("MerkleAirdrop contract", function () {
         deployMerkleAirdrop(
           TemplateType.STANDARD,
           factory,
-          [
-            owner.address,
-            airdropInfo.merkleRoot,
-            testERC20.address,
-            0n,
-            0,
-            0,
-            "0x00",
-          ],
+          [owner.address, airdropInfo.merkleRoot, testERC20.address, 0n],
           ethers.utils.parseEther("0.1").toBigInt(),
           airdropInfo.uuid
         )
@@ -195,90 +149,19 @@ describe("MerkleAirdrop contract", function () {
       const deadline =
         Math.floor(new Date().getTime() / 1000) + 3600 * 24 * 365;
       const amount = BigInt(claimInfo.amount);
-      const permit = {
-        permitted: {
-          token: testERC20.address,
-          amount: amount,
-        },
-        spender: factory.address,
-        nonce: 0,
-        deadline: deadline,
-      };
-      const { domain, types, values } = SignatureTransfer.getPermitData(
-        permit,
-        PERMIT2_ADDRESS,
-        31337
-      );
-      const signature = await owner._signTypedData(domain, types, values);
 
-      await testERC20.approve(PERMIT2_ADDRESS, MaxUint);
+      await testERC20.approve(factory.address, MaxUint);
 
       const airdrop = await deployMerkleAirdrop(
         TemplateType.STANDARD,
         factory,
-        [
-          owner.address,
-          airdropInfo.merkleRoot,
-          testERC20.address,
-          amount,
-          0, // nonce for permit
-          deadline, // deadline
-          signature, // signature
-        ],
+        [owner.address, airdropInfo.merkleRoot, testERC20.address, amount],
         ethers.utils.parseEther("0.01").toBigInt(),
         airdropInfo.uuid
       );
 
       expect(await testERC20.balanceOf(airdrop.address)).to.be.eq(amount);
       expect(await testERC20.balanceOf(factory.address)).to.be.eq(0);
-    });
-
-    it("Should success depositAirdropToken", async function () {
-      const { factory, testERC20, owner } = await loadFixture(
-        deployFactoryAndTemplateFixture
-      );
-
-      const claimInfo = airdropInfo.claims[sampleAddress];
-
-      const airdrop = await deployMerkleAirdrop(
-        TemplateType.STANDARD,
-        factory,
-        [
-          owner.address,
-          airdropInfo.merkleRoot,
-          testERC20.address,
-          0n,
-          0,
-          0,
-          "0x00",
-        ],
-        ethers.utils.parseEther("0.01").toBigInt(),
-        airdropInfo.uuid
-      );
-
-      const amount = BigNumber.from(claimInfo.amount);
-      const deadline =
-        Math.floor(new Date().getTime() / 1000) + 3600 * 24 * 365;
-      const permit = {
-        permitted: {
-          token: testERC20.address,
-          amount: amount,
-        },
-        spender: airdrop.address,
-        nonce: 1,
-        deadline: deadline,
-      };
-      const { domain, types, values } = SignatureTransfer.getPermitData(
-        permit,
-        PERMIT2_ADDRESS,
-        31337
-      );
-      const signature = await owner._signTypedData(domain, types, values);
-
-      await testERC20.approve(PERMIT2_ADDRESS, MaxUint);
-      await expect(airdrop.depositAirdropToken(amount, 1, deadline, signature))
-        .to.not.be.reverted;
-      expect(await testERC20.balanceOf(airdrop.address)).to.be.eq(amount);
     });
 
     it("Should success withdrawDepositedToken by owner", async function () {
@@ -301,17 +184,16 @@ describe("MerkleAirdrop contract", function () {
         deployAirdropFixture
       );
 
-      expect((await merkleAirdrop.getAirdropInfo()).slice(0, 5)).to.deep.eq([
+      expect((await merkleAirdrop.getAirdropInfo()).slice(0, 4)).to.deep.eq([
         testERC20.address,
         owner.address,
         airdropInfo.merkleRoot,
-        BigNumber.from(0),
         BigNumber.from(0),
       ]);
     });
 
     it("Should success isClaimed", async function () {
-      const { merkleAirdrop, addr1 } = await loadFixture(deployAirdropFixture);
+      const { merkleAirdrop } = await loadFixture(deployAirdropFixture);
 
       expect(await merkleAirdrop.isClaimed(0)).to.be.eq(false);
     });
@@ -319,30 +201,13 @@ describe("MerkleAirdrop contract", function () {
 
   describe("Claim AirdropInfo", function () {
     it("Should success claim", async function () {
-      const { merkleAirdrop, testERC20, owner } = await loadFixture(
+      const { merkleAirdrop, testERC20 } = await loadFixture(
         deployAirdropFixture
       );
 
       const claimInfo = airdropInfo.claims[sampleAddress];
       const amount = BigNumber.from(claimInfo.amount);
-      const permit = {
-        permitted: {
-          token: testERC20.address,
-          amount: amount,
-        },
-        spender: merkleAirdrop.address,
-        nonce: 2,
-        deadline: MaxUint,
-      };
-      const { domain, types, values } = SignatureTransfer.getPermitData(
-        permit,
-        PERMIT2_ADDRESS,
-        31337
-      );
-      const signature = await owner._signTypedData(domain, types, values);
-
-      await testERC20.approve(PERMIT2_ADDRESS, MaxUint);
-      await merkleAirdrop.depositAirdropToken(amount, 2, MaxUint, signature);
+      await testERC20.transfer(merkleAirdrop.address, amount);
       await expect(
         merkleAirdrop.claim(
           claimInfo.index,
@@ -355,30 +220,13 @@ describe("MerkleAirdrop contract", function () {
     });
 
     it("Should fail claim incorrect claimFee", async function () {
-      const { merkleAirdrop, testERC20, owner } = await loadFixture(
+      const { merkleAirdrop, testERC20 } = await loadFixture(
         deployAirdropFixture
       );
 
       const claimInfo = airdropInfo.claims[sampleAddress];
       const amount = BigNumber.from(claimInfo.amount);
-      const permit = {
-        permitted: {
-          token: testERC20.address,
-          amount: amount,
-        },
-        spender: merkleAirdrop.address,
-        nonce: 2,
-        deadline: MaxUint,
-      };
-      const { domain, types, values } = SignatureTransfer.getPermitData(
-        permit,
-        PERMIT2_ADDRESS,
-        31337
-      );
-      const signature = await owner._signTypedData(domain, types, values);
-
-      await testERC20.approve(PERMIT2_ADDRESS, MaxUint);
-      await merkleAirdrop.depositAirdropToken(amount, 2, MaxUint, signature);
+      await testERC20.transfer(merkleAirdrop.address, amount);
       await expect(
         merkleAirdrop.claim(
           claimInfo.index,
@@ -391,30 +239,13 @@ describe("MerkleAirdrop contract", function () {
     });
 
     it("Should fail claim second time", async function () {
-      const { merkleAirdrop, testERC20, owner } = await loadFixture(
+      const { merkleAirdrop, testERC20 } = await loadFixture(
         deployAirdropFixture
       );
 
       const claimInfo = airdropInfo.claims[sampleAddress];
       const amount = BigNumber.from(claimInfo.amount);
-      const permit = {
-        permitted: {
-          token: testERC20.address,
-          amount: amount,
-        },
-        spender: merkleAirdrop.address,
-        nonce: 3,
-        deadline: MaxUint,
-      };
-      const { domain, types, values } = SignatureTransfer.getPermitData(
-        permit,
-        PERMIT2_ADDRESS,
-        31337
-      );
-      const signature = await owner._signTypedData(domain, types, values);
-
-      await testERC20.approve(PERMIT2_ADDRESS, MaxUint);
-      await merkleAirdrop.depositAirdropToken(amount, 3, MaxUint, signature);
+      await testERC20.transfer(merkleAirdrop.address, amount);
 
       await expect(
         merkleAirdrop.claim(

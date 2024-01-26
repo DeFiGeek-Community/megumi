@@ -10,20 +10,11 @@ contract MerkleAirdropStandard is BaseTemplate {
         address token;
         address owner;
         bytes32 merkleRoot;
-        // Total amount deposited to date
-        uint256 depositedAmount;
         // Current stock amount
         uint256 stockAmount;
     }
-    struct Permit2Args {
-        uint256 amount;
-        uint256 nonce;
-        uint256 deadline;
-        bytes signature;
-    }
 
     address public token;
-    uint256 public totalClaimed;
     uint256 public constant claimFee = 0.0001 ether;
     uint256 public constant registrationFee = 0.01 ether;
 
@@ -31,24 +22,15 @@ contract MerkleAirdropStandard is BaseTemplate {
 
     constructor(
         address factory_,
-        address feePool_,
-        IPermit2 permit_
-    ) BaseTemplate(factory_, feePool_, permit_) {}
+        address feePool_
+    ) BaseTemplate(factory_, feePool_) {}
 
     function initialize(
         address owner_,
         bytes32 merkleRoot_,
         address token_,
-        uint256 depositAmount_,
-        uint256 nonce_,
-        uint256 deadline_,
-        bytes memory signature_
-    )
-        external
-        payable
-        onlyFactory
-        returns (address, uint256, uint256, uint256, bytes memory, address)
-    {
+        uint256 depositAmount_
+    ) external payable onlyFactory returns (address, uint256, address) {
         require(!initialized, "This contract has already been initialized");
         initialized = true;
 
@@ -56,13 +38,6 @@ contract MerkleAirdropStandard is BaseTemplate {
         if (token_ == address(0)) revert NotZeroRequired();
         if (msg.value != registrationFee) revert IncorrectAmount();
 
-        // To avoid stack too deep
-        Permit2Args memory _permit2Args = Permit2Args(
-            depositAmount_,
-            nonce_,
-            deadline_,
-            signature_
-        );
         owner = owner_;
         token = token_;
         merkleRoot = merkleRoot_;
@@ -75,87 +50,18 @@ contract MerkleAirdropStandard is BaseTemplate {
             owner,
             merkleRoot,
             abi.encodePacked(token),
-            abi.encode(
-                _permit2Args.amount,
-                _permit2Args.nonce,
-                _permit2Args.deadline,
-                _permit2Args.signature
-            )
+            abi.encode(depositAmount_)
         );
-        return (
-            token,
-            _permit2Args.amount,
-            _permit2Args.nonce,
-            _permit2Args.deadline,
-            _permit2Args.signature,
-            address(this)
-        );
+        return (token, depositAmount_, address(this));
     }
 
     function initializeTransfer(
         address token_,
         uint256 amount_,
-        uint256 nonce_,
-        uint256 deadline_,
-        bytes calldata signature_,
         address to_
     ) external payable onlyDelegateFactory {
         if (amount_ == 0) return;
-
-        Permit2.permitTransferFrom(
-            // The permit message.
-            IPermit2.PermitTransferFrom({
-                permitted: IPermit2.TokenPermissions({
-                    token: token_,
-                    amount: amount_
-                }),
-                nonce: nonce_,
-                deadline: deadline_
-            }),
-            // The transfer recipient and amount.
-            IPermit2.SignatureTransferDetails({
-                to: to_,
-                requestedAmount: amount_
-            }),
-            // The owner of the tokens, which must also be
-            // the signer of the message, otherwise this call
-            // will fail.
-            msg.sender,
-            // The packed signature that was the result of signing
-            // the EIP712 hash of `permit`.
-            signature_
-        );
-    }
-
-    function depositAirdropToken(
-        uint256 depositAmount_,
-        uint256 nonce_,
-        uint256 deadline_,
-        bytes calldata signature_
-    ) external onlyOwner {
-        Permit2.permitTransferFrom(
-            // The permit message.
-            IPermit2.PermitTransferFrom({
-                permitted: IPermit2.TokenPermissions({
-                    token: token,
-                    amount: depositAmount_
-                }),
-                nonce: nonce_,
-                deadline: deadline_
-            }),
-            // The transfer recipient and amount.
-            IPermit2.SignatureTransferDetails({
-                to: address(this),
-                requestedAmount: depositAmount_
-            }),
-            // The owner of the tokens, which must also be
-            // the signer of the message, otherwise this call
-            // will fail.
-            msg.sender,
-            // The packed signature that was the result of signing
-            // the EIP712 hash of `permit`.
-            signature_
-        );
+        IERC20(token_).safeTransferFrom(msg.sender, to_, amount_);
     }
 
     function withdrawDepositedToken() external onlyOwner {
@@ -165,17 +71,12 @@ contract MerkleAirdropStandard is BaseTemplate {
         );
     }
 
-    function depositedAmount() public view returns (uint256) {
-        return IERC20(token).balanceOf(address(this)) + totalClaimed;
-    }
-
     function getAirdropInfo() external view returns (AirdopInfo memory) {
         return
             AirdopInfo({
                 token: token,
                 owner: owner,
                 merkleRoot: merkleRoot,
-                depositedAmount: depositedAmount(),
                 stockAmount: IERC20(token).balanceOf(address(this))
             });
     }
@@ -200,19 +101,18 @@ contract MerkleAirdropStandard is BaseTemplate {
         uint256 index_,
         address account_,
         uint256 amount_,
-        bytes32[] calldata merkleProof
-    ) external payable {
+        bytes32[] calldata merkleProof_
+    ) external payable nonReentrant {
         if (isClaimed(index_)) revert AlreadyClaimed();
         if (IERC20(token).balanceOf(address(this)) < amount_)
             revert AmountNotEnough();
         if (msg.value != claimFee * 2) revert IncorrectAmount();
         // Verify the merkle proof.
         bytes32 _node = keccak256(abi.encodePacked(index_, account_, amount_));
-        if (!MerkleProof.verify(merkleProof, merkleRoot, _node))
+        if (!MerkleProof.verify(merkleProof_, merkleRoot, _node))
             revert InvalidProof();
         // Mark it claimed and send the token.
         _setClaimed(index_);
-        totalClaimed += amount_;
         IERC20(token).safeTransfer(account_, amount_);
 
         (bool success, ) = payable(owner).call{value: claimFee}("");

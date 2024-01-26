@@ -3,9 +3,9 @@ pragma solidity ^0.8.18;
 
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
-import "../interfaces/IPermit2.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
-contract BaseTemplate {
+contract BaseTemplate is ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     error AlreadyClaimed();
@@ -16,7 +16,6 @@ contract BaseTemplate {
 
     /// Flags that manage instance initialization
     bool initialized;
-    IPermit2 public immutable Permit2;
     address public immutable feePool;
     address public immutable factory;
 
@@ -43,10 +42,9 @@ contract BaseTemplate {
         uint256 amount
     );
 
-    constructor(address factory_, address feePool_, IPermit2 permit_) {
+    constructor(address factory_, address feePool_) {
         factory = factory_;
         feePool = feePool_;
-        Permit2 = permit_;
     }
 
     /// @dev Allow only owner of auction instance

@@ -1,7 +1,6 @@
 import { expect } from "chai";
 import { ethers } from "hardhat";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
-import { PERMIT2_ADDRESS } from "@uniswap/permit2-sdk";
 import { deployMerkleAirdrop } from "./lib/scenarioHelper";
 import { TemplateType, TemplateArgs } from "./lib/types";
 
@@ -30,11 +29,7 @@ describe("Factory", function () {
     const Template = await ethers.getContractFactory(
       `MerkleAirdrop${TemplateType.STANDARD}`
     );
-    const template = await Template.deploy(
-      factory.address,
-      feePool.address,
-      PERMIT2_ADDRESS
-    );
+    const template = await Template.deploy(factory.address, feePool.address);
     await template.deployed();
 
     await factory.addTemplate(

@@ -6,46 +6,18 @@ export const TemplateType = {
 } as const;
 export type TemplateType = (typeof TemplateType)[keyof typeof TemplateType];
 export type TemplateArgs = {
-  [TemplateType.STANDARD]: [
-    string,
-    string,
-    string,
-    bigint,
-    number,
-    number,
-    string
-  ];
-  [TemplateType.LINEAR_VESTING]: [
-    string,
-    string,
-    string,
-    number,
-    bigint,
-    number,
-    number,
-    string
-  ];
+  [TemplateType.STANDARD]: [string, string, string, bigint];
+  [TemplateType.LINEAR_VESTING]: [string, string, string, number, bigint];
 };
 export const TemplateArgs: { [key in TemplateType]: string[] } = {
-  // owner_, merkleRoot_, token_, depositAmount_, nonce_, deadline_, signature_
-  [TemplateType.STANDARD]: [
-    "address",
-    "bytes32",
-    "address",
-    "uint256",
-    "uint256",
-    "uint256",
-    "bytes",
-  ],
-  // owner_, merkleRoot_, token_, vestingDuration_, depositAmount_, nonce_, deadline_, signature_
+  // owner_, merkleRoot_, token_, depositAmount_
+  [TemplateType.STANDARD]: ["address", "bytes32", "address", "uint256"],
+  // owner_, merkleRoot_, token_, vestingDuration_, depositAmount_
   [TemplateType.LINEAR_VESTING]: [
     "address",
     "bytes32",
     "address",
     "uint256",
     "uint256",
-    "uint256",
-    "uint256",
-    "bytes",
   ],
 };
