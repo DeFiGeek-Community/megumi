@@ -12,20 +12,13 @@ contract MerkleAirdropLinearVesting is BaseTemplate {
         address token;
         address owner;
         bytes32 merkleRoot;
-        // Total amount deposited to date
-        uint256 depositedAmount;
         // Current stock amount
         uint256 stockAmount;
-    }
-    struct Permit2Args {
-        uint256 amount;
-        uint256 nonce;
-        uint256 deadline;
-        bytes signature;
+        uint256 vestingStart;
+        uint256 vestingDuration;
     }
 
     address public token;
-    uint256 public totalClaimed;
     uint256 public vestingStart;
     uint256 public vestingDuration;
     mapping(address => uint256) public claimedAmount;
@@ -37,25 +30,16 @@ contract MerkleAirdropLinearVesting is BaseTemplate {
 
     constructor(
         address factory_,
-        address feePool_,
-        IPermit2 permit_
-    ) BaseTemplate(factory_, feePool_, permit_) {}
+        address feePool_
+    ) BaseTemplate(factory_, feePool_) {}
 
     function initialize(
         address owner_,
         bytes32 merkleRoot_,
         address token_,
         uint256 vestingDuration_,
-        uint256 depositAmount_,
-        uint256 nonce_,
-        uint256 deadline_,
-        bytes memory signature_
-    )
-        external
-        payable
-        onlyFactory
-        returns (address, uint256, uint256, uint256, bytes memory, address)
-    {
+        uint256 depositAmount_
+    ) external payable onlyFactory returns (address, uint256, address) {
         require(!initialized, "This contract has already been initialized");
         initialized = true;
 
@@ -65,14 +49,6 @@ contract MerkleAirdropLinearVesting is BaseTemplate {
 
         vestingStart = block.timestamp;
         vestingDuration = vestingDuration_;
-
-        // To avoid stack too deep
-        Permit2Args memory _permit2Args = Permit2Args(
-            depositAmount_,
-            nonce_,
-            deadline_,
-            signature_
-        );
         owner = owner_;
         token = token_;
         merkleRoot = merkleRoot_;
@@ -85,98 +61,37 @@ contract MerkleAirdropLinearVesting is BaseTemplate {
             owner,
             merkleRoot,
             abi.encodePacked(token),
-            abi.encode(
-                _permit2Args.amount,
-                _permit2Args.nonce,
-                _permit2Args.deadline,
-                _permit2Args.signature
-            )
+            abi.encode(depositAmount_)
         );
-        return (
-            token,
-            _permit2Args.amount,
-            _permit2Args.nonce,
-            _permit2Args.deadline,
-            _permit2Args.signature,
-            address(this)
-        );
+        return (token, depositAmount_, address(this));
     }
 
     function initializeTransfer(
         address token_,
         uint256 amount_,
-        uint256 nonce_,
-        uint256 deadline_,
-        bytes calldata signature_,
         address to_
     ) external payable onlyDelegateFactory {
         if (amount_ == 0) return;
-
-        Permit2.permitTransferFrom(
-            // The permit message.
-            IPermit2.PermitTransferFrom({
-                permitted: IPermit2.TokenPermissions({
-                    token: token_,
-                    amount: amount_
-                }),
-                nonce: nonce_,
-                deadline: deadline_
-            }),
-            // The transfer recipient and amount.
-            IPermit2.SignatureTransferDetails({
-                to: to_,
-                requestedAmount: amount_
-            }),
-            // The owner of the tokens, which must also be
-            // the signer of the message, otherwise this call
-            // will fail.
-            msg.sender,
-            // The packed signature that was the result of signing
-            // the EIP712 hash of `permit`.
-            signature_
-        );
-    }
-
-    function depositAirdropToken(
-        uint256 depositAmount_,
-        uint256 nonce_,
-        uint256 deadline_,
-        bytes calldata signature_
-    ) external onlyOwner {
-        Permit2.permitTransferFrom(
-            // The permit message.
-            IPermit2.PermitTransferFrom({
-                permitted: IPermit2.TokenPermissions({
-                    token: token,
-                    amount: depositAmount_
-                }),
-                nonce: nonce_,
-                deadline: deadline_
-            }),
-            // The transfer recipient and amount.
-            IPermit2.SignatureTransferDetails({
-                to: address(this),
-                requestedAmount: depositAmount_
-            }),
-            // The owner of the tokens, which must also be
-            // the signer of the message, otherwise this call
-            // will fail.
-            msg.sender,
-            // The packed signature that was the result of signing
-            // the EIP712 hash of `permit`.
-            signature_
-        );
+        IERC20(token_).safeTransferFrom(msg.sender, to_, amount_);
     }
 
     function withdrawDepositedToken() external onlyOwner {
-        IERC20(token).safeTransfer(
-            owner,
-            IERC20(token).balanceOf(address(this))
+        uint256 _amount = IERC20(token).balanceOf(address(this));
+        IERC20(token).safeTransfer(owner, _amount);
+
+        emit WithdrawnDepositedTokens(
+            abi.encodePacked(token),
+            abi.encode(_amount)
         );
     }
 
-    function depositedAmount() public view returns (uint256) {
-        return IERC20(token).balanceOf(address(this)) + totalClaimed;
+    function withdrawClaimFee() external onlyOwner {
+        uint256 _amount = address(this).balance;
+
+        (bool success, ) = payable(owner).call{value: _amount}("");
+        require(success, "transfer failed");
+
+        emit WithdrawnClaimFee(_amount);
     }
 
     function getAirdropInfo() external view returns (AirdopInfo memory) {
@@ -185,8 +100,9 @@ contract MerkleAirdropLinearVesting is BaseTemplate {
                 token: token,
                 owner: owner,
                 merkleRoot: merkleRoot,
-                depositedAmount: depositedAmount(),
-                stockAmount: IERC20(token).balanceOf(address(this))
+                stockAmount: IERC20(token).balanceOf(address(this)),
+                vestingStart: vestingStart,
+                vestingDuration: vestingDuration
             });
     }
 
@@ -239,7 +155,6 @@ contract MerkleAirdropLinearVesting is BaseTemplate {
 
         // Keep track of claimed amount.
         claimedAmount[account_] += _availableToClaim;
-        totalClaimed += _availableToClaim;
 
         // Mark it claimed and send the token.
         if (claimedAmount[account_] >= amount_) {
@@ -248,10 +163,7 @@ contract MerkleAirdropLinearVesting is BaseTemplate {
         IERC20(token).safeTransfer(account_, _availableToClaim);
 
         if (msg.value > 0) {
-            (bool success, ) = payable(owner).call{value: claimFee}("");
-            require(success, "transfer failed");
-
-            (success, ) = payable(feePool).call{value: claimFee}("");
+            (bool success, ) = payable(feePool).call{value: claimFee}("");
             require(success, "transfer failed");
         }
 

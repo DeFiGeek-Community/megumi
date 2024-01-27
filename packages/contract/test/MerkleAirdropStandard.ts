@@ -197,7 +197,7 @@ describe("MerkleAirdropStandard contract", function () {
     it("Should success isClaimed", async function () {
       const { merkleAirdrop } = await loadFixture(deployAirdropFixture);
 
-      expect(await merkleAirdrop.isClaimed(0)).to.be.eq(false);
+      expect(await merkleAirdrop.isClaimed(0)).to.be.false;
     });
   });
 
@@ -223,6 +223,7 @@ describe("MerkleAirdropStandard contract", function () {
       expect(await ethers.provider.getBalance(feePool.address)).to.be.eq(
         ethers.utils.parseEther("0.0101")
       );
+      expect(await merkleAirdrop.isClaimed(claimInfo.index)).to.be.true;
     });
 
     it("Should fail claim incorrect claimFee", async function () {
