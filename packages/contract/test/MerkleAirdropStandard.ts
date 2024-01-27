@@ -2,7 +2,7 @@ import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
 import { BigNumber } from "ethers";
-import { deployMerkleAirdrop } from "./lib/scenarioHelper";
+import { deployMerkleAirdrop, sendEther } from "./lib/scenarioHelper";
 import { MaxUint, sampleAddress, airdropInfo } from "./lib/constants";
 import { TemplateType } from "./lib/types";
 
@@ -85,7 +85,7 @@ describe("MerkleAirdropStandard contract", function () {
 
   describe("Register AirdropInfo", function () {
     it("Should success deployMerkleAirdrop", async function () {
-      const { factory, testERC20, owner } = await loadFixture(
+      const { factory, testERC20, owner, feePool } = await loadFixture(
         deployFactoryAndTemplateFixture
       );
 
@@ -97,6 +97,10 @@ describe("MerkleAirdropStandard contract", function () {
       );
 
       expect(merkleAirdrop.address).to.be.ok;
+      // Fee poolの残高がregistrationFeeであることを確認
+      expect(await ethers.provider.getBalance(feePool.address)).to.be.eq(
+        ethers.utils.parseEther("0.01")
+      );
     });
 
     it("Should fail registAirdropInfo with same salt", async function () {
@@ -146,8 +150,6 @@ describe("MerkleAirdropStandard contract", function () {
       );
 
       const claimInfo = airdropInfo.claims[sampleAddress];
-      const deadline =
-        Math.floor(new Date().getTime() / 1000) + 3600 * 24 * 365;
       const amount = BigInt(claimInfo.amount);
 
       await testERC20.approve(factory.address, MaxUint);
@@ -201,7 +203,7 @@ describe("MerkleAirdropStandard contract", function () {
 
   describe("Claim AirdropInfo", function () {
     it("Should success claim", async function () {
-      const { merkleAirdrop, testERC20 } = await loadFixture(
+      const { merkleAirdrop, testERC20, feePool } = await loadFixture(
         deployAirdropFixture
       );
 
@@ -217,6 +219,10 @@ describe("MerkleAirdropStandard contract", function () {
           { value: ethers.utils.parseEther("0.0002") }
         )
       ).to.changeTokenBalance(testERC20, sampleAddress, amount);
+      // Fee poolの残高がregistrationFee + claimFeeであることを確認
+      expect(await ethers.provider.getBalance(feePool.address)).to.be.eq(
+        ethers.utils.parseEther("0.0101")
+      );
     });
 
     it("Should fail claim incorrect claimFee", async function () {
@@ -266,6 +272,51 @@ describe("MerkleAirdropStandard contract", function () {
           { value: ethers.utils.parseEther("0.0002") }
         )
       ).to.be.revertedWithCustomError(merkleAirdrop, "AlreadyClaimed");
+    });
+  });
+
+  describe("withdrawClaimFee", function () {
+    // 正常な手数料回収
+    it("withdrawClaimFee_success_1", async function () {
+      const { merkleAirdrop, owner, testERC20 } = await loadFixture(
+        deployAirdropFixture
+      );
+      const claimInfo = airdropInfo.claims[sampleAddress];
+      const amount = BigNumber.from(claimInfo.amount);
+      await testERC20.transfer(merkleAirdrop.address, amount);
+      await merkleAirdrop.claim(
+        claimInfo.index,
+        sampleAddress,
+        claimInfo.amount,
+        claimInfo.proof,
+        { value: ethers.utils.parseEther("0.0002") }
+      );
+      await expect(merkleAirdrop.withdrawClaimFee()).to.changeEtherBalances(
+        [merkleAirdrop, owner],
+        [
+          `-${ethers.utils.parseEther("0.0001")}`,
+          ethers.utils.parseEther("0.0001"),
+        ]
+      );
+    });
+
+    // オーナー以外の手数料回収
+    it("withdrawClaimFee_fail_2", async function () {
+      const { merkleAirdrop, addr1, testERC20 } = await loadFixture(
+        deployAirdropFixture
+      );
+      const claimInfo = airdropInfo.claims[sampleAddress];
+      const amount = BigNumber.from(claimInfo.amount);
+      await testERC20.transfer(merkleAirdrop.address, amount);
+      await merkleAirdrop.claim(
+        claimInfo.index,
+        sampleAddress,
+        claimInfo.amount,
+        claimInfo.proof,
+        { value: ethers.utils.parseEther("0.0002") }
+      );
+      await expect(merkleAirdrop.connect(addr1).withdrawClaimFee()).to.be
+        .reverted;
     });
   });
 });

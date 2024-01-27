@@ -150,9 +150,6 @@ describe("Factory", function () {
             ethers.utils.formatBytes32String("test"),
             token.address,
             0n,
-            0,
-            0,
-            "0x00",
           ],
           ethers.utils.parseEther("0.01").toBigInt()
         )

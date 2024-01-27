@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract Factory is Ownable {
     /// @param implemention implemention address
-    /// @param initializeSignature function signature of initialize auction
+    /// @param initializeSignature function signature of initialize airdrop
     /// @param transferSignature function signature of transfer token
     struct TemplateInfo {
         address implemention;

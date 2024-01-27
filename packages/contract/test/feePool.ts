@@ -23,7 +23,7 @@ describe("FeePool", function () {
       const { feePool, owner } = await loadFixture(
         deployFactoryAndFeePoolFixture
       );
-      sendEther(feePool.address, "1", owner);
+      await sendEther(feePool.address, "1", owner);
       await expect(
         feePool.connect(owner).withdrawEther(owner.address)
       ).to.changeEtherBalances(
@@ -37,7 +37,7 @@ describe("FeePool", function () {
       const { feePool, owner } = await loadFixture(
         deployFactoryAndFeePoolFixture
       );
-      sendEther(feePool.address, "1", owner);
+      await sendEther(feePool.address, "1", owner);
       await expect(
         feePool.connect(owner).withdrawEther(ethers.constants.AddressZero)
       ).to.be.revertedWith("Don't discard treasury!");
@@ -48,7 +48,7 @@ describe("FeePool", function () {
       const { feePool, owner, addr1 } = await loadFixture(
         deployFactoryAndFeePoolFixture
       );
-      sendEther(feePool.address, "1", owner);
+      await sendEther(feePool.address, "1", owner);
       await expect(feePool.connect(addr1).withdrawEther(addr1.address)).to.be
         .reverted;
     });

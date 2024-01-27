@@ -65,10 +65,22 @@ contract MerkleAirdropStandard is BaseTemplate {
     }
 
     function withdrawDepositedToken() external onlyOwner {
-        IERC20(token).safeTransfer(
-            owner,
-            IERC20(token).balanceOf(address(this))
+        uint256 _amount = IERC20(token).balanceOf(address(this));
+        IERC20(token).safeTransfer(owner, _amount);
+
+        emit WithdrawnDepositedTokens(
+            abi.encodePacked(token),
+            abi.encode(_amount)
         );
+    }
+
+    function withdrawClaimFee() external onlyOwner {
+        uint256 _amount = address(this).balance;
+
+        (bool success, ) = payable(owner).call{value: _amount}("");
+        require(success, "transfer failed");
+
+        emit WithdrawnClaimFee(_amount);
     }
 
     function getAirdropInfo() external view returns (AirdopInfo memory) {
@@ -102,7 +114,7 @@ contract MerkleAirdropStandard is BaseTemplate {
         address account_,
         uint256 amount_,
         bytes32[] calldata merkleProof_
-    ) external payable nonReentrant {
+    ) external payable {
         if (isClaimed(index_)) revert AlreadyClaimed();
         if (IERC20(token).balanceOf(address(this)) < amount_)
             revert AmountNotEnough();
@@ -115,10 +127,7 @@ contract MerkleAirdropStandard is BaseTemplate {
         _setClaimed(index_);
         IERC20(token).safeTransfer(account_, amount_);
 
-        (bool success, ) = payable(owner).call{value: claimFee}("");
-        require(success, "transfer failed");
-
-        (success, ) = payable(feePool).call{value: claimFee}("");
+        (bool success, ) = payable(feePool).call{value: claimFee}("");
         require(success, "transfer failed");
 
         emit Claimed(index_, account_, amount_);
