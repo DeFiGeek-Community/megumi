@@ -21,7 +21,6 @@ describe("MerkleAirdropStandard contract", function () {
 
     return { factory, feePool, owner, addr1, addr2 };
   }
-
   async function deployFactoryAndTemplateFixture() {
     const { factory, feePool, owner, addr1, addr2 } = await loadFixture(
       deployFactoryAndFeePoolFixture
@@ -56,6 +55,7 @@ describe("MerkleAirdropStandard contract", function () {
       owner,
       addr1,
       addr2,
+      Template,
     };
   }
   async function deployAirdropFixture() {
@@ -83,8 +83,8 @@ describe("MerkleAirdropStandard contract", function () {
     });
   });
 
-  describe("Register AirdropInfo", function () {
-    it("Should success deployMerkleAirdrop", async function () {
+  describe("initialize", function () {
+    it("Should success initialize", async function () {
       const { factory, testERC20, owner, feePool } = await loadFixture(
         deployFactoryAndTemplateFixture
       );
@@ -97,38 +97,16 @@ describe("MerkleAirdropStandard contract", function () {
       );
 
       expect(merkleAirdrop.address).to.be.ok;
+      expect(await merkleAirdrop.owner()).to.be.eq(owner.address);
+      expect(await merkleAirdrop.token()).to.be.eq(testERC20.address);
+      expect(await merkleAirdrop.merkleRoot()).to.be.eq(airdropInfo.merkleRoot);
       // Fee poolの残高がregistrationFeeであることを確認
       expect(await ethers.provider.getBalance(feePool.address)).to.be.eq(
         ethers.utils.parseEther("0.01")
       );
     });
 
-    it("Should fail registAirdropInfo with same salt", async function () {
-      const { factory, testERC20, owner } = await loadFixture(
-        deployFactoryAndTemplateFixture
-      );
-
-      await expect(
-        deployMerkleAirdrop(
-          TemplateType.STANDARD,
-          factory,
-          [owner.address, airdropInfo.merkleRoot, testERC20.address, 0n],
-          ethers.utils.parseEther("0.01").toBigInt(),
-          airdropInfo.uuid
-        )
-      ).to.not.be.reverted;
-      await expect(
-        deployMerkleAirdrop(
-          TemplateType.STANDARD,
-          factory,
-          [owner.address, airdropInfo.merkleRoot, testERC20.address, 0n],
-          ethers.utils.parseEther("0.01").toBigInt(),
-          airdropInfo.uuid
-        )
-      ).to.be.reverted;
-    });
-
-    it("Should fail registAirdropInfo with invalid registFee", async function () {
+    it("Should revert initialize with invalid registrationFee", async function () {
       const { factory, testERC20, owner } = await loadFixture(
         deployFactoryAndTemplateFixture
       );
@@ -144,7 +122,7 @@ describe("MerkleAirdropStandard contract", function () {
       ).to.be.reverted;
     });
 
-    it("Should success registAirdropInfoWithDeposit", async function () {
+    it("Should success initialize with deposit", async function () {
       const { factory, testERC20, owner } = await loadFixture(
         deployFactoryAndTemplateFixture
       );
@@ -165,11 +143,25 @@ describe("MerkleAirdropStandard contract", function () {
       expect(await testERC20.balanceOf(airdrop.address)).to.be.eq(amount);
       expect(await testERC20.balanceOf(factory.address)).to.be.eq(0);
     });
+  });
 
+  describe("withdrawDepositedToken", function () {
     it("Should success withdrawDepositedToken by owner", async function () {
-      const { merkleAirdrop } = await loadFixture(deployAirdropFixture);
+      const { merkleAirdrop, testERC20, owner } = await loadFixture(
+        deployAirdropFixture
+      );
 
-      await expect(merkleAirdrop.withdrawDepositedToken()).to.not.be.reverted;
+      await testERC20.transfer(
+        merkleAirdrop.address,
+        ethers.utils.parseEther("1")
+      );
+      await expect(
+        merkleAirdrop.withdrawDepositedToken()
+      ).to.changeTokenBalances(
+        testERC20,
+        [merkleAirdrop, owner],
+        [ethers.utils.parseEther("-1"), ethers.utils.parseEther("1")]
+      );
     });
 
     it("Should fail withdrawDepositedToken by other account", async function () {
@@ -180,7 +172,7 @@ describe("MerkleAirdropStandard contract", function () {
     });
   });
 
-  describe("Watch AirdropInfo", function () {
+  describe("getAirdropInfo", function () {
     it("Should success getAirdropInfo", async function () {
       const { merkleAirdrop, owner, testERC20 } = await loadFixture(
         deployAirdropFixture
@@ -193,7 +185,9 @@ describe("MerkleAirdropStandard contract", function () {
         BigNumber.from(0),
       ]);
     });
+  });
 
+  describe("isClaimed", function () {
     it("Should success isClaimed", async function () {
       const { merkleAirdrop } = await loadFixture(deployAirdropFixture);
 
@@ -201,7 +195,7 @@ describe("MerkleAirdropStandard contract", function () {
     });
   });
 
-  describe("Claim AirdropInfo", function () {
+  describe("claim", function () {
     it("Should success claim", async function () {
       const { merkleAirdrop, testERC20, feePool } = await loadFixture(
         deployAirdropFixture

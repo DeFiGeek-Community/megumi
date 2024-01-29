@@ -48,3 +48,24 @@ export async function deployMerkleAirdrop<T extends TemplateType>(
   const Airdrop = await ethers.getContractFactory(`MerkleAirdrop${type}`);
   return Airdrop.attach(templateAddr);
 }
+
+export async function simulateDeployMerkleAirdrop<T extends TemplateType>(
+  type: T,
+  factory: Contract,
+  args: TemplateArgs[T],
+  creationFee: bigint,
+  uuid?: string // nonce for create2
+): Promise<string> {
+  const templateName = ethers.utils.formatBytes32String(type);
+  const abiCoder = ethers.utils.defaultAbiCoder;
+  const encodedArgs: string = abiCoder.encode(TemplateArgs[type], args);
+
+  uuid = uuid ?? ethers.utils.formatBytes32String(Math.random().toString());
+  const address = await factory.callStatic.deployMerkleAirdrop(
+    templateName,
+    uuid,
+    encodedArgs,
+    { value: creationFee }
+  );
+  return address;
+}

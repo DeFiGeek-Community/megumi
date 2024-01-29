@@ -2,6 +2,7 @@ import { expect } from "chai";
 import { ethers } from "hardhat";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { deployMerkleAirdrop } from "./lib/scenarioHelper";
+import { airdropInfo } from "./lib/constants";
 import { TemplateType, TemplateArgs } from "./lib/types";
 
 describe("Factory", function () {
@@ -145,12 +146,7 @@ describe("Factory", function () {
         deployMerkleAirdrop(
           TemplateType.STANDARD,
           factory,
-          [
-            owner.address,
-            ethers.utils.formatBytes32String("test"),
-            token.address,
-            0n,
-          ],
+          [owner.address, airdropInfo.merkleRoot, token.address, 0n],
           ethers.utils.parseEther("0.01").toBigInt()
         )
       ).to.not.be.reverted;
@@ -165,18 +161,12 @@ describe("Factory", function () {
       const token = await Token.deploy("", "", initialSupply);
       await token.deployed();
 
-      const depositAmount = ethers.utils.parseEther("1");
-      await token.approve(factory.address, depositAmount);
-
       const abiCoder = ethers.utils.defaultAbiCoder;
       const args = abiCoder.encode(TemplateArgs[TemplateType.STANDARD], [
         owner.address,
-        ethers.utils.formatBytes32String("test"),
+        airdropInfo.merkleRoot,
         token.address,
         0n,
-        0,
-        0,
-        "0x00",
       ]);
 
       const notRegisteredTemplateName =
@@ -185,6 +175,34 @@ describe("Factory", function () {
       await expect(
         factory.deployMerkleAirdrop(notRegisteredTemplateName, nonce, args)
       ).to.be.revertedWith("No such template in the list.");
+    });
+
+    it("Should fail deploy with the same salt", async function () {
+      const { factory, owner } = await loadFixture(
+        deployFactoryAndTemplateFixture
+      );
+      const Token = await ethers.getContractFactory("TestERC20");
+      const token = await Token.deploy("", "", initialSupply);
+      await token.deployed();
+
+      await expect(
+        deployMerkleAirdrop(
+          TemplateType.STANDARD,
+          factory,
+          [owner.address, airdropInfo.merkleRoot, token.address, 0n],
+          ethers.utils.parseEther("0.01").toBigInt(),
+          airdropInfo.uuid
+        )
+      ).to.not.be.reverted;
+      await expect(
+        deployMerkleAirdrop(
+          TemplateType.STANDARD,
+          factory,
+          [owner.address, airdropInfo.merkleRoot, token.address, 0n],
+          ethers.utils.parseEther("0.01").toBigInt(),
+          airdropInfo.uuid
+        )
+      ).to.be.reverted;
     });
   });
 });
