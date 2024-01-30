@@ -184,7 +184,7 @@ describe("MerkleAirdropLinearVesting contract", function () {
   });
 
   describe("claim", function () {
-    it("Should success claim", async function () {
+    it("Should success to claim", async function () {
       const { merkleAirdrop, feePool, testERC20 } = await loadFixture(
         deployAirdropFixture
       );
@@ -218,7 +218,7 @@ describe("MerkleAirdropLinearVesting contract", function () {
       ).to.be.revertedWithCustomError(merkleAirdrop, "AlreadyClaimed");
     });
 
-    it("Should fail claim incorrect claimFee", async function () {
+    it("Should fail to claim incorrect claimFee", async function () {
       const { merkleAirdrop, testERC20 } = await loadFixture(
         deployAirdropFixture
       );
@@ -237,7 +237,87 @@ describe("MerkleAirdropLinearVesting contract", function () {
       ).to.be.revertedWithCustomError(merkleAirdrop, "IncorrectAmount");
     });
 
-    it("Should fail claim when claimable token amount is 0", async function () {
+    it("Should fail to claim with not enough amount", async function () {
+      const { merkleAirdrop, testERC20 } = await loadFixture(
+        deployAirdropFixture
+      );
+
+      const claimInfo = airdropInfo.claims[sampleAddress];
+      const amount = BigNumber.from(claimInfo.amount);
+      await testERC20.transfer(merkleAirdrop.address, amount.sub(1));
+      await time.increase(vestingDuration);
+      await expect(
+        merkleAirdrop.claim(
+          claimInfo.index,
+          sampleAddress,
+          claimInfo.amount,
+          claimInfo.proof,
+          { value: ethers.utils.parseEther("0.0002") }
+        )
+      ).to.be.revertedWithCustomError(merkleAirdrop, "AmountNotEnough");
+    });
+
+    it("Should fail tp claim with incorrect address with InvalidProof error", async function () {
+      const { merkleAirdrop, testERC20, addr1 } = await loadFixture(
+        deployAirdropFixture
+      );
+
+      const claimInfo = airdropInfo.claims[sampleAddress];
+      const amount = BigNumber.from(claimInfo.amount);
+      await testERC20.transfer(merkleAirdrop.address, amount);
+      await expect(
+        merkleAirdrop.claim(
+          claimInfo.index,
+          addr1.address,
+          claimInfo.amount,
+          claimInfo.proof,
+          { value: ethers.utils.parseEther("0.0002") }
+        )
+      ).to.be.revertedWithCustomError(merkleAirdrop, "InvalidProof");
+    });
+
+    it("Should fail to claim with incorrect amount with InvalidProof error", async function () {
+      const { merkleAirdrop, testERC20 } = await loadFixture(
+        deployAirdropFixture
+      );
+
+      const claimInfo = airdropInfo.claims[sampleAddress];
+      const amount = BigNumber.from(claimInfo.amount);
+      await testERC20.transfer(merkleAirdrop.address, amount);
+      await expect(
+        merkleAirdrop.claim(
+          claimInfo.index,
+          sampleAddress,
+          BigNumber.from(claimInfo.amount).sub(1),
+          claimInfo.proof,
+          { value: ethers.utils.parseEther("0.0002") }
+        )
+      ).to.be.revertedWithCustomError(merkleAirdrop, "InvalidProof");
+    });
+
+    it("Should fail to claim with incorrect proof with InvalidProof error", async function () {
+      const { merkleAirdrop, testERC20 } = await loadFixture(
+        deployAirdropFixture
+      );
+
+      const claimInfo = airdropInfo.claims[sampleAddress];
+      const amount = BigNumber.from(claimInfo.amount);
+      await testERC20.transfer(merkleAirdrop.address, amount);
+      await expect(
+        merkleAirdrop.claim(
+          claimInfo.index,
+          sampleAddress,
+          claimInfo.amount,
+          [
+            "0xe0c04daac9552fb5491797ebf760e5275d4d7f35d37a8dae3295d701be1de2b5",
+            "0x70a3c131f80bc21341be1df819ba8f542b015d5e9587b45d8a30c45f400577ed",
+          ],
+          { value: ethers.utils.parseEther("0.0002") }
+        )
+      ).to.be.revertedWithCustomError(merkleAirdrop, "InvalidProof");
+    });
+
+    it("Should fail to claim when claimable token amount is 0", async function () {
       const { merkleAirdrop, testERC20 } = await loadFixture(
         deployAirdropFixture
       );
@@ -255,6 +335,25 @@ describe("MerkleAirdropLinearVesting contract", function () {
           { value: ethers.utils.parseEther("0.0002") }
         )
       ).revertedWithCustomError(merkleAirdrop, "NothingToClaim");
+    });
+
+    it("Should fail to claim if the contract do not have enough amount", async function () {
+      const { merkleAirdrop, testERC20 } = await loadFixture(
+        deployAirdropFixture
+      );
+
+      const claimInfo = airdropInfo.claims[sampleAddress];
+      const amount = BigNumber.from(claimInfo.amount);
+      await testERC20.transfer(merkleAirdrop.address, amount.sub(1));
+      await expect(
+        merkleAirdrop.claim(
+          claimInfo.index,
+          sampleAddress,
+          claimInfo.amount,
+          claimInfo.proof,
+          { value: ethers.utils.parseEther("0.0002") }
+        )
+      ).to.be.revertedWithCustomError(merkleAirdrop, "AmountNotEnough");
     });
 
     it("Should success to claim half and the full eligible amount after 50 days and 100 days respectively", async function () {

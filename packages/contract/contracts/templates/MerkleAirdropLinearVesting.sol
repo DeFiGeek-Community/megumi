@@ -104,15 +104,18 @@ contract MerkleAirdropLinearVesting is BaseTemplate {
     ) external payable {
         if (claimedAmount[account_] == 0 && msg.value != claimFee * 2)
             revert IncorrectAmount();
+        if (
+            claimedAmount[account_] == 0 &&
+            IERC20(token).balanceOf(address(this)) < amount_
+        ) revert AmountNotEnough();
         if (claimedAmount[account_] > 0 && msg.value > 0)
             revert IncorrectAmount();
+        if (claimedAmount[account_] >= amount_) revert AlreadyClaimed();
 
         // Verify the merkle proof.
         bytes32 _node = keccak256(abi.encodePacked(index_, account_, amount_));
         if (!MerkleProof.verify(merkleProof, merkleRoot, _node))
             revert InvalidProof();
-
-        if (claimedAmount[account_] >= amount_) revert AlreadyClaimed();
 
         uint256 _claimableAmount = 0;
         if (block.timestamp >= vestingStart + vestingDuration) {

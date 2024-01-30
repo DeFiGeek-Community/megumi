@@ -185,7 +185,7 @@ describe("MerkleAirdropStandard contract", function () {
   });
 
   describe("claim", function () {
-    it("Should success claim", async function () {
+    it("Should success to claim", async function () {
       const { merkleAirdrop, testERC20, feePool } = await loadFixture(
         deployAirdropFixture
       );
@@ -209,7 +209,7 @@ describe("MerkleAirdropStandard contract", function () {
       expect(await merkleAirdrop.isClaimed(claimInfo.index)).to.be.true;
     });
 
-    it("Should fail claim incorrect claimFee", async function () {
+    it("Should fail to claim incorrect claimFee", async function () {
       const { merkleAirdrop, testERC20 } = await loadFixture(
         deployAirdropFixture
       );
@@ -228,7 +228,86 @@ describe("MerkleAirdropStandard contract", function () {
       ).to.be.revertedWithCustomError(merkleAirdrop, "IncorrectAmount");
     });
 
-    it("Should fail claim second time", async function () {
+    it("Should fail to claim with not enough amount", async function () {
+      const { merkleAirdrop, testERC20, addr1 } = await loadFixture(
+        deployAirdropFixture
+      );
+
+      const claimInfo = airdropInfo.claims[sampleAddress];
+      const amount = BigNumber.from(claimInfo.amount);
+      await testERC20.transfer(merkleAirdrop.address, amount);
+      await expect(
+        merkleAirdrop.claim(
+          claimInfo.index,
+          sampleAddress,
+          BigNumber.from(claimInfo.amount).add(1),
+          claimInfo.proof,
+          { value: ethers.utils.parseEther("0.0002") }
+        )
+      ).to.be.revertedWithCustomError(merkleAirdrop, "AmountNotEnough");
+    });
+
+    it("Should fail to claim with incorrect address with InvalidProof error", async function () {
+      const { merkleAirdrop, testERC20, addr1 } = await loadFixture(
+        deployAirdropFixture
+      );
+
+      const claimInfo = airdropInfo.claims[sampleAddress];
+      const amount = BigNumber.from(claimInfo.amount);
+      await testERC20.transfer(merkleAirdrop.address, amount);
+      await expect(
+        merkleAirdrop.claim(
+          claimInfo.index,
+          addr1.address,
+          claimInfo.amount,
+          claimInfo.proof,
+          { value: ethers.utils.parseEther("0.0002") }
+        )
+      ).to.be.revertedWithCustomError(merkleAirdrop, "InvalidProof");
+    });
+
+    it("Should fail to claim with incorrect amount with InvalidProof error", async function () {
+      const { merkleAirdrop, testERC20 } = await loadFixture(
+        deployAirdropFixture
+      );
+
+      const claimInfo = airdropInfo.claims[sampleAddress];
+      const amount = BigNumber.from(claimInfo.amount);
+      await testERC20.transfer(merkleAirdrop.address, amount);
+      await expect(
+        merkleAirdrop.claim(
+          claimInfo.index,
+          sampleAddress,
+          BigNumber.from(claimInfo.amount).sub(1),
+          claimInfo.proof,
+          { value: ethers.utils.parseEther("0.0002") }
+        )
+      ).to.be.revertedWithCustomError(merkleAirdrop, "InvalidProof");
+    });
+
+    it("Should fail to claim with incorrect proof with InvalidProof error", async function () {
+      const { merkleAirdrop, testERC20 } = await loadFixture(
+        deployAirdropFixture
+      );
+
+      const claimInfo = airdropInfo.claims[sampleAddress];
+      const amount = BigNumber.from(claimInfo.amount);
+      await testERC20.transfer(merkleAirdrop.address, amount);
+      await expect(
+        merkleAirdrop.claim(
+          claimInfo.index,
+          sampleAddress,
+          claimInfo.amount,
+          [
+            "0xe0c04daac9552fb5491797ebf760e5275d4d7f35d37a8dae3295d701be1de2b5",
+            "0x70a3c131f80bc21341be1df819ba8f542b015d5e9587b45d8a30c45f400577ed",
+          ],
+          { value: ethers.utils.parseEther("0.0002") }
+        )
+      ).to.be.revertedWithCustomError(merkleAirdrop, "InvalidProof");
+    });
+
+    it("Should fail to claim second time", async function () {
       const { merkleAirdrop, testERC20 } = await loadFixture(
         deployAirdropFixture
       );
