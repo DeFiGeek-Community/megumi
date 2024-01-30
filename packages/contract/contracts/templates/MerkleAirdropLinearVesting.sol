@@ -75,16 +75,6 @@ contract MerkleAirdropLinearVesting is BaseTemplate {
         IERC20(token_).safeTransferFrom(msg.sender, to_, amount_);
     }
 
-    function withdrawDepositedToken() external onlyOwner {
-        uint256 _amount = IERC20(token).balanceOf(address(this));
-        IERC20(token).safeTransfer(owner, _amount);
-
-        emit WithdrawnDepositedTokens(
-            abi.encodePacked(token),
-            abi.encode(_amount)
-        );
-    }
-
     function withdrawClaimFee() external onlyOwner {
         uint256 _amount = address(this).balance;
 
@@ -106,29 +96,12 @@ contract MerkleAirdropLinearVesting is BaseTemplate {
             });
     }
 
-    function isClaimed(uint256 index_) public view returns (bool) {
-        uint256 claimedWordIndex = index_ / 256;
-        uint256 claimedBitIndex = index_ % 256;
-        uint256 claimedWord = claimedBitMap[claimedWordIndex];
-        uint256 mask = (1 << claimedBitIndex);
-        return claimedWord & mask == mask;
-    }
-
-    function _setClaimed(uint256 index_) private {
-        uint256 claimedWordIndex = index_ / 256;
-        uint256 claimedBitIndex = index_ % 256;
-        claimedBitMap[claimedWordIndex] =
-            claimedBitMap[claimedWordIndex] |
-            (1 << claimedBitIndex);
-    }
-
     function claim(
         uint256 index_,
         address account_,
         uint256 amount_,
         bytes32[] calldata merkleProof
     ) external payable {
-        if (claimedAmount[account_] >= amount_) revert AlreadyClaimed();
         if (claimedAmount[account_] == 0 && msg.value != claimFee * 2)
             revert IncorrectAmount();
         if (claimedAmount[account_] > 0 && msg.value > 0)
@@ -138,6 +111,8 @@ contract MerkleAirdropLinearVesting is BaseTemplate {
         bytes32 _node = keccak256(abi.encodePacked(index_, account_, amount_));
         if (!MerkleProof.verify(merkleProof, merkleRoot, _node))
             revert InvalidProof();
+
+        if (claimedAmount[account_] >= amount_) revert AlreadyClaimed();
 
         uint256 _claimableAmount = 0;
         if (block.timestamp >= vestingStart + vestingDuration) {
@@ -156,10 +131,6 @@ contract MerkleAirdropLinearVesting is BaseTemplate {
         // Keep track of claimed amount.
         claimedAmount[account_] += _availableToClaim;
 
-        // Mark it claimed and send the token.
-        if (claimedAmount[account_] >= amount_) {
-            _setClaimed(index_);
-        }
         IERC20(token).safeTransfer(account_, _availableToClaim);
 
         if (msg.value > 0) {
