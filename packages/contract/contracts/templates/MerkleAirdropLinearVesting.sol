@@ -102,14 +102,7 @@ contract MerkleAirdropLinearVesting is BaseTemplate {
         uint256 amount_,
         bytes32[] calldata merkleProof
     ) external payable {
-        if (claimedAmount[account_] == 0 && msg.value != claimFee * 2)
-            revert IncorrectAmount();
-        if (
-            claimedAmount[account_] == 0 &&
-            IERC20(token).balanceOf(address(this)) < amount_
-        ) revert AmountNotEnough();
-        if (claimedAmount[account_] > 0 && msg.value > 0)
-            revert IncorrectAmount();
+        if (msg.value != claimFee * 2) revert IncorrectAmount();
         if (claimedAmount[account_] >= amount_) revert AlreadyClaimed();
 
         // Verify the merkle proof.
@@ -131,15 +124,12 @@ contract MerkleAirdropLinearVesting is BaseTemplate {
         if (IERC20(token).balanceOf(address(this)) < _availableToClaim)
             revert AmountNotEnough();
 
-        // Keep track of claimed amount.
         claimedAmount[account_] += _availableToClaim;
 
         IERC20(token).safeTransfer(account_, _availableToClaim);
 
-        if (msg.value > 0) {
-            (bool success, ) = payable(feePool).call{value: claimFee}("");
-            require(success, "transfer failed");
-        }
+        (bool success, ) = payable(feePool).call{value: claimFee}("");
+        require(success, "transfer failed");
 
         emit Claimed(index_, account_, _availableToClaim);
     }

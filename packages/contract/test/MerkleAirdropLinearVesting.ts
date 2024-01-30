@@ -337,25 +337,6 @@ describe("MerkleAirdropLinearVesting contract", function () {
       ).revertedWithCustomError(merkleAirdrop, "NothingToClaim");
     });
 
-    it("Should fail to claim if the contract do not have enough amount", async function () {
-      const { merkleAirdrop, testERC20 } = await loadFixture(
-        deployAirdropFixture
-      );
-
-      const claimInfo = airdropInfo.claims[sampleAddress];
-      const amount = BigNumber.from(claimInfo.amount);
-      await testERC20.transfer(merkleAirdrop.address, amount.sub(1));
-      await expect(
-        merkleAirdrop.claim(
-          claimInfo.index,
-          sampleAddress,
-          claimInfo.amount,
-          claimInfo.proof,
-          { value: ethers.utils.parseEther("0.0002") }
-        )
-      ).to.be.revertedWithCustomError(merkleAirdrop, "AmountNotEnough");
-    });
-
     it("Should success to claim half and the full eligible amount after 50 days and 100 days respectively", async function () {
       const { merkleAirdrop, testERC20, feePool } = await loadFixture(
         deployAirdropFixture
@@ -408,7 +389,8 @@ describe("MerkleAirdropLinearVesting contract", function () {
           claimInfo.index,
           sampleAddress,
           claimInfo.amount,
-          claimInfo.proof
+          claimInfo.proof,
+          { value: ethers.utils.parseEther("0.0002") }
         )
       ).to.be.revertedWithCustomError(merkleAirdrop, "NothingToClaim");
 
@@ -416,7 +398,6 @@ describe("MerkleAirdropLinearVesting contract", function () {
 
       snapshot = await takeSnapshot();
 
-      // 2回目のクレームではfeeの送金があるとリバート
       await expect(
         merkleAirdrop.claim(
           claimInfo.index,
@@ -424,16 +405,6 @@ describe("MerkleAirdropLinearVesting contract", function () {
           claimInfo.amount,
           claimInfo.proof,
           { value: ethers.utils.parseEther("0.0002") }
-        )
-      ).to.be.revertedWithCustomError(merkleAirdrop, "IncorrectAmount");
-
-      // 2回目のクレームではfeeの送金がない場合に成功
-      await expect(
-        merkleAirdrop.claim(
-          claimInfo.index,
-          sampleAddress,
-          claimInfo.amount,
-          claimInfo.proof
         )
       ).to.changeTokenBalances(
         testERC20,
@@ -446,7 +417,8 @@ describe("MerkleAirdropLinearVesting contract", function () {
           claimInfo.index,
           sampleAddress,
           claimInfo.amount,
-          claimInfo.proof
+          claimInfo.proof,
+          { value: ethers.utils.parseEther("0.0002") }
         )
       ).to.be.revertedWithCustomError(merkleAirdrop, "AlreadyClaimed");
     });
