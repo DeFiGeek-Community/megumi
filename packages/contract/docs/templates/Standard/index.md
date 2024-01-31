@@ -38,7 +38,7 @@
 constructor(
     address factory_,
     address feePool_
-) BaseTemplate(factory_, feePool_)
+) MerkleAirdropBase(factory_, feePool_)
 ```
 
 | 引数名    | 型      | 概要                         | 制約 |

@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity ^0.8.18;
 
-import "./BaseTemplate.sol";
+import "./MerkleAirdropBase.sol";
 
-contract MerkleAirdropStandard is BaseTemplate {
+contract Standard is MerkleAirdropBase {
     using SafeERC20 for IERC20;
 
     struct AirdopInfo {
@@ -23,7 +23,7 @@ contract MerkleAirdropStandard is BaseTemplate {
     constructor(
         address factory_,
         address feePool_
-    ) BaseTemplate(factory_, feePool_) {}
+    ) MerkleAirdropBase(factory_, feePool_) {}
 
     function initialize(
         address owner_,

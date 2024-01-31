@@ -4,7 +4,7 @@ pragma solidity ^0.8.18;
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 
-contract BaseTemplate {
+contract MerkleAirdropBase {
     using SafeERC20 for IERC20;
 
     error AlreadyClaimed();

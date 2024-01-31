@@ -27,9 +27,7 @@ describe("Factory", function () {
       deployFactoryAndFeePoolFixture
     );
 
-    const Template = await ethers.getContractFactory(
-      `MerkleAirdrop${TemplateType.STANDARD}`
-    );
+    const Template = await ethers.getContractFactory(TemplateType.STANDARD);
     const template = await Template.deploy(factory.address, feePool.address);
     await template.deployed();
 

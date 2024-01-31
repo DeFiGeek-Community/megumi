@@ -45,7 +45,7 @@ export async function deployMerkleAirdrop<T extends TemplateType>(
   const receipt = await tx.wait();
   const event = receipt.events.find((event: any) => event.event === "Deployed");
   const [, templateAddr] = event.args;
-  const Airdrop = await ethers.getContractFactory(`MerkleAirdrop${type}`);
+  const Airdrop = await ethers.getContractFactory(type);
   return Airdrop.attach(templateAddr);
 }
 
