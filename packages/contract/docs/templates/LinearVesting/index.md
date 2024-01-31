@@ -1,14 +1,14 @@
-# Standard
+# LinearVesting
 
 ## 概要
 
 エアドロップの割当情報から作成したマークルツリーを活用し、マークルルートの検証によってトークンの割当額を対象アドレスに対して送信する。
-クレーマーは割当額を一括でクレームすることができる。
-BaseTemplate を継承。
+設置者は設置手数料を支払い、任意の線形べスティング期間を指定してエアドロップを設置する。
+クレーマーは割当額をべスティング期間に応じてクレーム時点でのクレーム可能額を受取ることができる。
 
 ### 親コントラクト
 
-BaseTemplate
+[MerkleAirdropBase](../MerkleAirdropBase/index.md)
 
 ### 定数
 
@@ -26,9 +26,17 @@ BaseTemplate
 
 エアドロップ対象トークン
 
-#### mapping(uint256 => uint256) private claimedBitMap;
+#### uint256 public vestingStart;
 
-各ノードのクレーム済ステータスを管理するビットマップ
+べスティングの開始タイムスタンプ
+
+#### uint256 public vestingDuration;
+
+べスティング期間
+
+#### mapping(address => uint256) public claimedAmount;
+
+各アドレスのクレーム済額を管理するマッピング
 
 ### 関数
 
@@ -58,18 +66,20 @@ function initialize(
     address owner_,
     bytes32 merkleRoot_,
     address token_,
+    uint256 vestingDuration_,
     uint256 depositAmount_
 ) external payable onlyFactory returns (address, uint256, address)
 ```
 
 ※ 0.01 ether (registrationFee)の送金が必須
 
-| 引数名          | 型      | 概要                                      | 制約                  |
-| --------------- | ------- | ----------------------------------------- | --------------------- |
-| owner\_         | address | エアドロップ設置者のアドレス              | 0 アドレスでないこと  |
-| merkleRoot\_    | bytes32 | マークルルート                            | -                     |
-| token\_         | address | エアドロップ対象の ERC20 トークンアドレス | 0 アドレスでないこと- |
-| depositAmount\_ | uint256 | 設置時に同時にデポジットするトークン額    | -                     |
+| 引数名            | 型      | 概要                                      | 制約                  |
+| ----------------- | ------- | ----------------------------------------- | --------------------- |
+| owner\_           | address | エアドロップ設置者のアドレス              | 0 アドレスでないこと  |
+| merkleRoot\_      | bytes32 | マークルルート                            | -                     |
+| token\_           | address | エアドロップ対象の ERC20 トークンアドレス | 0 アドレスでないこと- |
+| vestingDuration\_ | uint256 | べスティング期間を秒単位で指定            | 0 でない              |
+| depositAmount\_   | uint256 | 設置時に同時にデポジットするトークン額    | -                     |
 
 ---
 
@@ -84,17 +94,6 @@ function initializeTransfer(
     uint256 amount_,
     address to_
 ) external payable onlyDelegateFactory
-```
-
----
-
-### withdrawDepositedToken
-
-デポジットしてあるトークンを全額引出す。
-エアドロップ設置者のみ呼出し可能。
-
-```
-function withdrawDepositedToken() external onlyOwner
 ```
 
 ---
@@ -116,39 +115,37 @@ function withdrawClaimFee() external onlyOwner
 function getAirdropInfo() external view returns (AirdopInfo memory)
 ```
 
-### isClaimed
-
-指定 index がクレーム済かどうかを返却する view 関数
-
-```kotlin
-function isClaimed(uint256 index\_) public view returns (bool)
-```
-
-| 引数名  | 型      | 概要               | 制約 |
-| ------- | ------- | ------------------ | ---- |
-| index\_ | uint256 | 対象ノードの index | -    |
-
----
-
-### \_setClaimed
-
-指定 index に対してクレーム済ステータスをセットする private 関数
-
-```kotlin
-function _setClaimed(uint256 index_) private
-```
-
-| 引数名  | 型      | 概要               | 制約 |
-| ------- | ------- | ------------------ | ---- |
-| index\_ | uint256 | 対象ノードの index | -    |
-
----
-
 ### claim
 
-対象のノード index, アドレス、クレーム額、検証に必要なノードの配列を検証し、正しい場合は対象アドレスにクレーム額を送信する。クレーム手数料 として 0.0001 ether、プラットフォーム手数料として 0.0001 ether で合計 0.0002 ether の送金が必要。
+対象のノード index, アドレス、クレーム額、検証に必要なノードの配列を検証し、正しい場合は対象アドレスにクレーム時点でのクレーム可能額を送信する。クレーム手数料 として 0.0001 ether、プラットフォーム手数料として 0.0001 ether で合計 0.0002 ether の送金が必要。
 
 ※ 0.0002 ether の送金が必須
+
+各アカウントのクレーム時点でのクレーム可能額 a は下記で表される。
+
+$$
+a = \min\left(\frac{t - t_0}{d}, 1\right) \cdot a_{\text{total}} - a_{\text{claimed}}
+$$
+
+$
+a_{\text{total}}: アカウントへの割当額
+$
+
+$
+a_{\text{claimed}}: アカウントのクレーム済額
+$
+
+$
+d: べスティング期間
+$
+
+$
+t_0: べスティング開始タイムスタンプ
+$
+
+$
+t: クレーム時点のタイムスタンプ
+$
 
 ```kotlin
 function claim(
@@ -172,16 +169,20 @@ function claim(
 
 ```mermaid
 flowchart TD
-    START([クレーム]) --> A{クレーム済}
+    START([クレーム]) --> A{クレーム済額が
+    amount以上}
     A --YES--> R2[Revert AlreadyClaimed]
     A --NO--> B{送金額が
-    0.0002 etherでない}
+    0.0002ETHでない}
     B --YES--> R1[Revert IncorrectAmount]
-    B --NO-->  C[/Verify/]
+    B --NO--> C[/Verify/]
     C --> D{成功?}
     D --NO--> R3[Revert InvalidProof]
-    D --YES--> E[/クレーム済に変更/]
-    E --> F[/対象アドレスにクレーム額を送信/]
-    F --> G[/クレーム手数料0.0001 etherをFeePoolコントラクトに送金/]
-    G --> END([クレーム終了])
+    D --YES--> E[/現時点のクレーム可能額計算/]
+    E --> F{クレーム可能額が0}
+    F --YES-->R4[Revert NothingToClaim]
+    F --NO--> G[/クレーム済額にクレーム可能額を加算/]
+    G --> K[/対象アドレスにクレーム額を送信/]
+    K --> L[/クレーム手数料0.0001 etherをFeePoolコントラクトに送金/]
+    L --> END([クレーム終了])
 ```
