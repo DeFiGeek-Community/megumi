@@ -14,10 +14,10 @@ contract MerkleAirdropStandard is BaseTemplate {
         uint256 stockAmount;
     }
 
-    address public token;
     uint256 public constant claimFee = 0.0001 ether;
     uint256 public constant registrationFee = 0.01 ether;
 
+    address public token;
     mapping(uint256 => uint256) private claimedBitMap;
 
     constructor(

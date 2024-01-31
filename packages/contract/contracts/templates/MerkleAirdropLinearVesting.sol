@@ -18,15 +18,13 @@ contract MerkleAirdropLinearVesting is BaseTemplate {
         uint256 vestingDuration;
     }
 
+    uint256 public constant claimFee = 0.0001 ether;
+    uint256 public constant registrationFee = 0.01 ether;
+
     address public token;
     uint256 public vestingStart;
     uint256 public vestingDuration;
     mapping(address => uint256) public claimedAmount;
-
-    uint256 public constant claimFee = 0.0001 ether;
-    uint256 public constant registrationFee = 0.01 ether;
-
-    mapping(uint256 => uint256) private claimedBitMap;
 
     constructor(
         address factory_,
@@ -46,6 +44,7 @@ contract MerkleAirdropLinearVesting is BaseTemplate {
         if (owner_ == address(0)) revert NotZeroRequired();
         if (token_ == address(0)) revert NotZeroRequired();
         if (msg.value != registrationFee) revert IncorrectAmount();
+        if (vestingDuration_ == 0) revert NotZeroRequired();
 
         vestingStart = block.timestamp;
         vestingDuration = vestingDuration_;
@@ -102,8 +101,8 @@ contract MerkleAirdropLinearVesting is BaseTemplate {
         uint256 amount_,
         bytes32[] calldata merkleProof
     ) external payable {
-        if (msg.value != claimFee * 2) revert IncorrectAmount();
         if (claimedAmount[account_] >= amount_) revert AlreadyClaimed();
+        if (msg.value != claimFee * 2) revert IncorrectAmount();
 
         // Verify the merkle proof.
         bytes32 _node = keccak256(abi.encodePacked(index_, account_, amount_));
