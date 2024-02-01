@@ -127,25 +127,15 @@ $$
 a = \min\left(\frac{t - t_0}{d}, 1\right) \cdot a_{\text{total}} - a_{\text{claimed}}
 $$
 
-$
-a_{\text{total}}: アカウントへの割当額
-$
+$a_{\text{total}}: \text{アカウントへの割当額}$
 
-$
-a_{\text{claimed}}: アカウントのクレーム済額
-$
+$a_{\text{claimed}}: \text{アカウントのクレーム済額}$
 
-$
-d: べスティング期間
-$
+$d: \text{べスティング期間}$
 
-$
-t_0: べスティング開始タイムスタンプ
-$
+$t_0: \text{べスティング開始タイムスタンプ}$
 
-$
-t: クレーム時点のタイムスタンプ
-$
+$t: \text{クレーム時点のタイムスタンプ}$
 
 ```kotlin
 function claim(
