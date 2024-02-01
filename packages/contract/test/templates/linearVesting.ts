@@ -165,6 +165,27 @@ describe("MerkleAirdropLinearVesting contract", function () {
       expect(await testERC20.balanceOf(airdrop.address)).to.be.eq(amount);
       expect(await testERC20.balanceOf(factory.address)).to.be.eq(0);
     });
+
+    it("Should fail to initialize with 0 vesting duration", async function () {
+      const { factory, testERC20, owner } = await loadFixture(
+        deployFactoryAndTemplateFixture
+      );
+
+      const claimInfo = airdropInfo.claims[sampleAddress];
+      const amount = BigInt(claimInfo.amount);
+
+      await testERC20.approve(factory.address, MaxUint);
+
+      await expect(
+        deployMerkleAirdrop(
+          TemplateType.LINEAR_VESTING,
+          factory,
+          [owner.address, airdropInfo.merkleRoot, testERC20.address, 0, amount],
+          ethers.utils.parseEther("0.01").toBigInt(),
+          airdropInfo.uuid
+        )
+      ).to.be.reverted;
+    });
   });
 
   describe("getAirdropInfo", function () {
@@ -257,7 +278,7 @@ describe("MerkleAirdropLinearVesting contract", function () {
       ).to.be.revertedWithCustomError(merkleAirdrop, "AmountNotEnough");
     });
 
-    it("Should fail tp claim with incorrect address with InvalidProof error", async function () {
+    it("Should fail to claim with incorrect address with InvalidProof error", async function () {
       const { merkleAirdrop, testERC20, addr1 } = await loadFixture(
         deployAirdropFixture
       );
