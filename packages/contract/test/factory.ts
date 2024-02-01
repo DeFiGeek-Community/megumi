@@ -3,7 +3,7 @@ import { ethers } from "hardhat";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { deployMerkleAirdrop } from "./lib/scenarioHelper";
 import { airdropInfo } from "./lib/constants";
-import { TemplateType, TemplateArgs } from "./lib/types";
+import { TemplateType, TemplateArgs } from "../scripts/types";
 
 describe("Factory", function () {
   const templateName = ethers.utils.formatBytes32String(TemplateType.STANDARD);

@@ -1,5 +1,3 @@
-/* Types */
-// TODO extract to ui workspace and import from ui package
 export const TemplateType = {
   STANDARD: "Standard",
   LINEAR_VESTING: "LinearVesting",

@@ -9,7 +9,7 @@ import { BigNumber } from "ethers";
 import { deployMerkleAirdrop } from "../lib/scenarioHelper";
 import { deployFactoryAndFeePoolFixture } from "../lib/fixtures";
 import { MaxUint, sampleAddress, airdropInfo } from "../lib/constants";
-import { TemplateType } from "../lib/types";
+import { TemplateType } from "../../scripts/types";
 
 describe("MerkleAirdropLinearVesting contract", function () {
   const templateName = ethers.utils.formatBytes32String(

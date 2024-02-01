@@ -2,8 +2,9 @@ import { HardhatUserConfig } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox";
 import "@nomiclabs/hardhat-ethers";
 import "@nomiclabs/hardhat-etherscan";
+import "hardhat-deploy";
 import "hardhat-gas-reporter";
-import 'dotenv/config'
+import "dotenv/config";
 
 const { INFURA_KEY, ETHERSCAN_API_KEY, PRIVATE_KEY } = process.env;
 
@@ -25,6 +26,10 @@ const config: HardhatUserConfig = {
     },
     goerli: {
       url: `https://goerli.infura.io/v3/${INFURA_KEY}`,
+      accounts: [`${PRIVATE_KEY}`],
+    },
+    sepolia: {
+      url: `https://sepolia.infura.io/v3/${INFURA_KEY}`,
       accounts: [`${PRIVATE_KEY}`],
     },
     hardhat: {

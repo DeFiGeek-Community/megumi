@@ -1,6 +1,6 @@
 import { ethers } from "hardhat";
 import { Contract } from "ethers";
-import { TemplateType, TemplateArgs } from "./types";
+import { TemplateType, TemplateArgs } from "../../scripts/types";
 
 export async function sendERC20(
   erc20contract: any,

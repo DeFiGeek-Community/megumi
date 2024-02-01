@@ -7,6 +7,12 @@
     "user-app:dev": "npm run dev -w @merkle-airdrop-tool/user-app",
     "user-app:deploy": "npm run deploy -w @merkle-airdrop-tool/user-app",
     "contract:test": "npm run test -w @merkle-airdrop-tool/contract",
+    "contract:node": "npm run node -w @merkle-airdrop-tool/contract",
+    "contract:deploy:mainnet": "npm run deploy:mainnet -w @merkle-airdrop-tool/contract",
+    "contract:deploy:sepolia": "npm run deploy:sepolia -w @merkle-airdrop-tool/contract",
+    "contract:deploy:local": "npm run deploy:local -w @merkle-airdrop-tool/contract",
+    "contract:verify:mainnet": "npm run verify:mainnet -w @merkle-airdrop-tool/contract",
+    "contract:verify:sepolia": "npm run verify:sepolia -w @merkle-airdrop-tool/contract",
     "format": "prettier --write **/*.{js,ts,sol}"
   },
   "repository": {
