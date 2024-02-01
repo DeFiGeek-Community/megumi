@@ -174,8 +174,7 @@ function claim(
 flowchart TD
     START([クレーム]) --> A{クレーム済}
     A --YES--> R2[Revert AlreadyClaimed]
-    A --NO--> B{送金額が
-    0.0002 etherでない}
+    A --NO--> B{送金額が\n0.0002 etherでない}
     B --YES--> R1[Revert IncorrectAmount]
     B --NO-->  C[/Verify/]
     C --> D{成功?}

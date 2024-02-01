@@ -169,11 +169,9 @@ function claim(
 
 ```mermaid
 flowchart TD
-    START([クレーム]) --> A{クレーム済額が
-    amount以上}
+    START([クレーム]) --> A{クレーム済額が\namount以上}
     A --YES--> R2[Revert AlreadyClaimed]
-    A --NO--> B{送金額が
-    0.0002ETHでない}
+    A --NO--> B{送金額が\n0.0002ETHでない}
     B --YES--> R1[Revert IncorrectAmount]
     B --NO--> C[/Verify/]
     C --> D{成功?}
