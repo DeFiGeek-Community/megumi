@@ -38,7 +38,7 @@ contract LinearVesting is MerkleAirdropBase {
         uint256 vestingDuration_,
         uint256 depositAmount_
     ) external payable onlyFactory returns (address, uint256, address) {
-        require(!initialized, "This contract has already been initialized");
+        if (initialized) revert AlreadyInitialized();
         initialized = true;
 
         if (owner_ == address(0)) revert NotZeroRequired();
@@ -53,7 +53,7 @@ contract LinearVesting is MerkleAirdropBase {
         merkleRoot = merkleRoot_;
 
         (bool success, ) = payable(feePool).call{value: msg.value}("");
-        require(success, "transfer failed");
+        if (!success) revert TransferFailed();
 
         emit Deployed(
             address(this),
@@ -78,7 +78,7 @@ contract LinearVesting is MerkleAirdropBase {
         uint256 _amount = address(this).balance;
 
         (bool success, ) = payable(owner).call{value: _amount}("");
-        require(success, "transfer failed");
+        if (!success) revert TransferFailed();
 
         emit WithdrawnClaimFee(_amount);
     }
@@ -128,7 +128,7 @@ contract LinearVesting is MerkleAirdropBase {
         IERC20(token).safeTransfer(account_, _availableToClaim);
 
         (bool success, ) = payable(feePool).call{value: claimFee}("");
-        require(success, "transfer failed");
+        if (!success) revert TransferFailed();
 
         emit Claimed(index_, account_, _availableToClaim);
     }

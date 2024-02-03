@@ -7,11 +7,13 @@ import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProo
 contract MerkleAirdropBase {
     using SafeERC20 for IERC20;
 
+    error AlreadyInitialized();
     error AlreadyClaimed();
     error InvalidProof();
     error NotZeroRequired();
     error IncorrectAmount();
     error AmountNotEnough();
+    error TransferFailed();
 
     /// Flags that manage instance initialization
     bool initialized;
