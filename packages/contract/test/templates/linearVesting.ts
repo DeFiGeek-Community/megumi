@@ -186,6 +186,32 @@ describe("MerkleAirdropLinearVesting contract", function () {
         )
       ).to.be.reverted;
     });
+
+    it("Should fail initialize when token balance is not enough", async function () {
+      const { factory, testERC20, owner } = await loadFixture(
+        deployFactoryAndTemplateFixture
+      );
+
+      const amount = ethers.utils.parseEther("101").toBigInt();
+
+      await testERC20.approve(factory.address, MaxUint);
+
+      await expect(
+        deployMerkleAirdrop(
+          TemplateType.LINEAR_VESTING,
+          factory,
+          [
+            owner.address,
+            airdropInfo.merkleRoot,
+            testERC20.address,
+            vestingDuration,
+            amount,
+          ],
+          ethers.utils.parseEther("0.01").toBigInt(),
+          airdropInfo.uuid
+        )
+      ).to.be.revertedWith("ERC20: transfer amount exceeds balance");
+    });
   });
 
   describe("getAirdropInfo", function () {
@@ -205,7 +231,7 @@ describe("MerkleAirdropLinearVesting contract", function () {
   });
 
   describe("claim", function () {
-    it("Should success to claim", async function () {
+    it("Should success to claim and fail to re-claim", async function () {
       const { merkleAirdrop, feePool, testERC20 } = await loadFixture(
         deployAirdropFixture
       );
@@ -258,7 +284,7 @@ describe("MerkleAirdropLinearVesting contract", function () {
       ).to.be.revertedWithCustomError(merkleAirdrop, "IncorrectAmount");
     });
 
-    it("Should fail to claim with not enough amount", async function () {
+    it("Should fail to claim with not enough amount in the airdrop contract", async function () {
       const { merkleAirdrop, testERC20 } = await loadFixture(
         deployAirdropFixture
       );

@@ -130,6 +130,26 @@ describe("MerkleAirdropStandard contract", function () {
       expect(await testERC20.balanceOf(airdrop.address)).to.be.eq(amount);
       expect(await testERC20.balanceOf(factory.address)).to.be.eq(0);
     });
+
+    it("Should fail initialize when token balance is not enough", async function () {
+      const { factory, testERC20, owner } = await loadFixture(
+        deployFactoryAndTemplateFixture
+      );
+
+      const amount = ethers.utils.parseEther("101").toBigInt();
+
+      await testERC20.approve(factory.address, MaxUint);
+
+      await expect(
+        deployMerkleAirdrop(
+          TemplateType.STANDARD,
+          factory,
+          [owner.address, airdropInfo.merkleRoot, testERC20.address, amount],
+          ethers.utils.parseEther("0.01").toBigInt(),
+          airdropInfo.uuid
+        )
+      ).to.be.revertedWith("ERC20: transfer amount exceeds balance");
+    });
   });
 
   describe("withdrawDepositedToken", function () {
