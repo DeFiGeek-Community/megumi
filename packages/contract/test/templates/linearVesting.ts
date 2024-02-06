@@ -210,7 +210,7 @@ describe("MerkleAirdropLinearVesting contract", function () {
           ethers.utils.parseEther("0.01").toBigInt(),
           airdropInfo.uuid
         )
-      ).to.be.revertedWith("ERC20: transfer amount exceeds balance");
+      ).to.be.revertedWithCustomError(testERC20, "ERC20InsufficientBalance");
     });
   });
 

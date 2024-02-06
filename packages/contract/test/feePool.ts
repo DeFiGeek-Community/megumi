@@ -2,21 +2,9 @@ import { expect } from "chai";
 import { ethers } from "hardhat";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { sendEther } from "./lib/scenarioHelper";
+import { deployFactoryAndFeePoolFixture } from "./lib/fixtures";
 
 describe("FeePool", function () {
-  async function deployFactoryAndFeePoolFixture() {
-    const [owner, addr1, addr2] = await ethers.getSigners();
-
-    const Factory = await ethers.getContractFactory("Factory");
-    const factory = await Factory.deploy();
-    await factory.deployed();
-    const FeePool = await ethers.getContractFactory("FeePool");
-    const feePool = await FeePool.deploy();
-    await feePool.deployed();
-
-    return { factory, feePool, owner, addr1, addr2 };
-  }
-
   describe("withdrawEther", function () {
     // 正常な手数料回収
     it("withdrawEther_success_1", async function () {

@@ -4,23 +4,11 @@ import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { deployMerkleAirdrop } from "./lib/scenarioHelper";
 import { airdropInfo } from "./lib/constants";
 import { TemplateType, TemplateArgs } from "../scripts/types";
+import { deployFactoryAndFeePoolFixture } from "./lib/fixtures";
 
 describe("Factory", function () {
   const templateName = ethers.utils.formatBytes32String(TemplateType.STANDARD);
   const initialSupply = ethers.utils.parseEther("1000");
-
-  async function deployFactoryAndFeePoolFixture() {
-    const [owner, addr1, addr2] = await ethers.getSigners();
-
-    const Factory = await ethers.getContractFactory("Factory");
-    const factory = await Factory.deploy();
-    await factory.deployed();
-    const FeePool = await ethers.getContractFactory("FeePool");
-    const feePool = await FeePool.deploy();
-    await feePool.deployed();
-
-    return { factory, feePool, owner, addr1, addr2 };
-  }
 
   async function deployFactoryAndTemplateFixture() {
     const { factory, feePool, owner, addr1, addr2 } = await loadFixture(
