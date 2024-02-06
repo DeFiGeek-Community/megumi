@@ -18,7 +18,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
   await deploy("FeePool", {
     from: foundation,
-    args: [],
+    args: [foundation.address],
     log: true,
     getContractFactory,
   });
