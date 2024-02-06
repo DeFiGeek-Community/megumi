@@ -10,10 +10,6 @@ contract LinearVesting is MerkleAirdropBase {
 
     struct AirdopInfo {
         address token;
-        address owner;
-        bytes32 merkleRoot;
-        // Current stock amount
-        uint256 stockAmount;
         uint256 vestingStart;
         uint256 vestingDuration;
     }
@@ -24,7 +20,7 @@ contract LinearVesting is MerkleAirdropBase {
     address public token;
     uint256 public vestingStart;
     uint256 public vestingDuration;
-    mapping(address => uint256) public claimedAmount;
+    mapping(uint256 => uint256) public claimedAmount;
 
     constructor(
         address factory_,
@@ -87,9 +83,6 @@ contract LinearVesting is MerkleAirdropBase {
         return
             AirdopInfo({
                 token: token,
-                owner: owner,
-                merkleRoot: merkleRoot,
-                stockAmount: IERC20(token).balanceOf(address(this)),
                 vestingStart: vestingStart,
                 vestingDuration: vestingDuration
             });
@@ -101,7 +94,7 @@ contract LinearVesting is MerkleAirdropBase {
         uint256 amount_,
         bytes32[] calldata merkleProof
     ) external payable {
-        if (claimedAmount[account_] >= amount_) revert AlreadyClaimed();
+        if (claimedAmount[index_] >= amount_) revert AlreadyClaimed();
         if (msg.value != claimFee * 2) revert IncorrectAmount();
 
         // Verify the merkle proof.
@@ -109,7 +102,7 @@ contract LinearVesting is MerkleAirdropBase {
         if (!MerkleProof.verify(merkleProof, merkleRoot, _node))
             revert InvalidProof();
 
-        uint256 _claimableAmount = 0;
+        uint256 _claimableAmount;
         if (block.timestamp >= vestingStart + vestingDuration) {
             _claimableAmount = amount_;
         } else {
@@ -117,13 +110,13 @@ contract LinearVesting is MerkleAirdropBase {
                 ((block.timestamp - vestingStart) * amount_) /
                 vestingDuration;
         }
-        uint256 _availableToClaim = _claimableAmount - claimedAmount[account_];
+        uint256 _availableToClaim = _claimableAmount - claimedAmount[index_];
 
         if (_availableToClaim == 0) revert NothingToClaim();
         if (IERC20(token).balanceOf(address(this)) < _availableToClaim)
             revert AmountNotEnough();
 
-        claimedAmount[account_] += _availableToClaim;
+        claimedAmount[index_] += _availableToClaim;
 
         IERC20(token).safeTransfer(account_, _availableToClaim);
 

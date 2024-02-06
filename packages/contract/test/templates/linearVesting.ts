@@ -219,11 +219,8 @@ describe("MerkleAirdropLinearVesting contract", function () {
       const { merkleAirdrop, owner, testERC20, merkleAirdropDeployedAt } =
         await loadFixture(deployAirdropFixture);
 
-      expect((await merkleAirdrop.getAirdropInfo()).slice(0, 6)).to.deep.eq([
+      expect((await merkleAirdrop.getAirdropInfo()).slice(0, 3)).to.deep.eq([
         testERC20.address,
-        owner.address,
-        airdropInfo.merkleRoot,
-        BigNumber.from(0),
         merkleAirdropDeployedAt,
         vestingDuration,
       ]);
@@ -410,7 +407,7 @@ describe("MerkleAirdropLinearVesting contract", function () {
         [merkleAirdrop, sampleAddress],
         [-amount.div(2), amount.div(2)]
       );
-      expect(await merkleAirdrop.claimedAmount(sampleAddress)).to.be.eq(
+      expect(await merkleAirdrop.claimedAmount(claimInfo.index)).to.be.eq(
         amount.div(2)
       );
 
@@ -457,6 +454,10 @@ describe("MerkleAirdropLinearVesting contract", function () {
         testERC20,
         [merkleAirdrop, sampleAddress],
         [-amount.div(2), amount.div(2)]
+      );
+
+      expect(await merkleAirdrop.claimedAmount(claimInfo.index)).to.be.eq(
+        amount
       );
 
       await expect(

@@ -34,9 +34,9 @@
 
 べスティング期間
 
-#### mapping(address => uint256) public claimedAmount;
+#### mapping(uint256 => uint256) public claimedAmount;
 
-各アドレスのクレーム済額を管理するマッピング
+各ノードのクレーム済額を管理するマッピング
 
 ### 関数
 

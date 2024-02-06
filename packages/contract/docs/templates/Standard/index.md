@@ -108,14 +108,6 @@ function withdrawDepositedToken() external onlyOwner
 function withdrawClaimFee() external onlyOwner
 ```
 
-### getAirdropInfo
-
-エアドロップコントラクトの情報を返す view 関数
-
-```kotlin
-function getAirdropInfo() external view returns (AirdopInfo memory)
-```
-
 ### isClaimed
 
 指定 index がクレーム済かどうかを返却する view 関数

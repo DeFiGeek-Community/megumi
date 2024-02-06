@@ -179,21 +179,6 @@ describe("MerkleAirdropStandard contract", function () {
     });
   });
 
-  describe("getAirdropInfo", function () {
-    it("Should success getAirdropInfo", async function () {
-      const { merkleAirdrop, owner, testERC20 } = await loadFixture(
-        deployAirdropFixture
-      );
-
-      expect((await merkleAirdrop.getAirdropInfo()).slice(0, 4)).to.deep.eq([
-        testERC20.address,
-        owner.address,
-        airdropInfo.merkleRoot,
-        BigNumber.from(0),
-      ]);
-    });
-  });
-
   describe("isClaimed", function () {
     it("Should success isClaimed", async function () {
       const { merkleAirdrop } = await loadFixture(deployAirdropFixture);

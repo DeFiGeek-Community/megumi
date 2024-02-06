@@ -6,14 +6,6 @@ import "./MerkleAirdropBase.sol";
 contract Standard is MerkleAirdropBase {
     using SafeERC20 for IERC20;
 
-    struct AirdopInfo {
-        address token;
-        address owner;
-        bytes32 merkleRoot;
-        // Current stock amount
-        uint256 stockAmount;
-    }
-
     uint256 public constant claimFee = 0.0001 ether;
     uint256 public constant registrationFee = 0.01 ether;
 
@@ -81,16 +73,6 @@ contract Standard is MerkleAirdropBase {
         if (!success) revert TransferFailed();
 
         emit WithdrawnClaimFee(_amount);
-    }
-
-    function getAirdropInfo() external view returns (AirdopInfo memory) {
-        return
-            AirdopInfo({
-                token: token,
-                owner: owner,
-                merkleRoot: merkleRoot,
-                stockAmount: IERC20(token).balanceOf(address(this))
-            });
     }
 
     function isClaimed(uint256 index_) public view returns (bool) {
