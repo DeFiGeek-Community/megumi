@@ -102,3 +102,8 @@ dist
 
 # TernJS port file
 .tern-port
+
+.vscode
+# packages/contract/artifacts/**/*
+
+packages/contract/typechain-types

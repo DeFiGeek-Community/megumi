@@ -7,3 +7,5 @@ cache
 /artifacts/*
 !/artifacts/contracts
 /artifacts/contracts/**/*.dbg.json
+/deployments/localhost/*
+!/deployments/localhost/.chainId
