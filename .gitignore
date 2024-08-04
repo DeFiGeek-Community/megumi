@@ -107,3 +107,5 @@ dist
 # packages/contract/artifacts/**/*
 
 packages/contract/typechain-types
+
+**/temp/**

@@ -10,7 +10,10 @@
     "verify:mainnet": "npx hardhat run scripts/verify.ts --network mainnet",
     "verify:sepolia": "npx hardhat run scripts/verify.ts --network sepolia",
     "compile": "hardhat compile",
-    "test": "hardhat test"
+    "test": "hardhat test",
+    "snapshot:pnd_txjp": "npx hardhat run scripts/snapshot_sample/snapshot_pnd_txjp.ts",
+    "snapshot:txjp": "npx hardhat run scripts/snapshot_sample/snapshot_txjp.ts",
+    "snapshot:merge": "npx hardhat run scripts/snapshot_sample/snapshot_merge.ts"
   },
   "repository": {
     "type": "git",
