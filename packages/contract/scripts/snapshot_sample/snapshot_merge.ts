@@ -1,4 +1,3 @@
-import { BigNumber } from "ethers";
 import { readFileSync, writeFileSync } from "fs";
 
 const BOTTOM_THRESHOLD = 1000000;
@@ -32,8 +31,8 @@ async function main() {
   }
 
   const sum = Object.values(result).reduce(
-    (acc, string) => acc.add(BigNumber.from(string)),
-    BigNumber.from(0)
+    (acc, string) => acc + BigInt(string),
+    0n
   );
 
   console.log("SUM: ", sum.toString());

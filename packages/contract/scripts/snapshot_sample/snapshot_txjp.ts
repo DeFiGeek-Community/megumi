@@ -1,5 +1,4 @@
 import { writeFileSync } from "fs";
-import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
 import { SNAPSHOT_BLOCK, IGNORE_LIST } from "./settings";
 
@@ -11,7 +10,7 @@ const TOKEN_ADDRESS = "0x961dD84059505D59f82cE4fb87D3c09bec65301d";
 const extractTokenBalance = async (
   snapshotTokenAddress: string,
   untilBlock: number
-): Promise<[{ [address: string]: BigNumber }]> => {
+): Promise<{ [address: string]: bigint }> => {
   const responseJson = await fetchHolders(
     CHAIN_ID,
     snapshotTokenAddress,
@@ -24,7 +23,7 @@ const extractTokenBalance = async (
       data: { address: string; balance: string }
     ) => {
       if (!IGNORE_LIST.includes(data.address.toLowerCase())) {
-        acc[ethers.utils.getAddress(data.address)] = data.balance;
+        acc[ethers.getAddress(data.address)] = data.balance;
       }
       return acc;
     },
@@ -75,8 +74,8 @@ async function main() {
   const result = await extractTokenBalance(TOKEN_ADDRESS, SNAPSHOT_BLOCK);
 
   const sum = Object.values(result).reduce(
-    (acc, string) => acc.add(BigNumber.from(string)),
-    BigNumber.from(0)
+    (acc, string) => acc + BigInt(string),
+    BigInt(0)
   );
 
   console.log("SUM: ", sum.toString());

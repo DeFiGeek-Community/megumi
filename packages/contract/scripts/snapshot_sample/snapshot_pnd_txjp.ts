@@ -1,5 +1,4 @@
 import { ethers } from "hardhat";
-import { BigNumber } from "ethers";
 import { writeFileSync } from "fs";
 import pndABI from "./abi/pndCJPY.json";
 import { SNAPSHOT_BLOCK, IGNORE_LIST } from "./settings";
@@ -15,7 +14,7 @@ async function getEventsUntilBlock(
   startBlock: number,
   untilBlock: number
 ) {
-  const provider = new ethers.providers.AlchemyProvider(
+  const provider = new ethers.AlchemyProvider(
     NETWORK,
     process.env.ALCHEMY_API_KEY
   );
@@ -46,7 +45,7 @@ async function main() {
   );
 
   const pndCollateralizedTXJPBalanceByAddress: {
-    [key: string]: BigNumber;
+    [key: string]: bigint;
   } = {};
 
   // Supply events
@@ -62,9 +61,8 @@ async function main() {
 
     pndCollateralizedTXJPBalanceByAddress[supplyEvents[i].args.from] =
       supplyEvents[i].args.dst in pndCollateralizedTXJPBalanceByAddress
-        ? pndCollateralizedTXJPBalanceByAddress[supplyEvents[i].args.dst].add(
-            supplyEvents[i].args.amount
-          )
+        ? pndCollateralizedTXJPBalanceByAddress[supplyEvents[i].args.dst] +
+          supplyEvents[i].args.amount
         : supplyEvents[i].args.amount;
   }
 
@@ -81,27 +79,26 @@ async function main() {
     if (!(withdrawEvents[i].args.src in pndCollateralizedTXJPBalanceByAddress))
       throw Error("Address not found");
     pndCollateralizedTXJPBalanceByAddress[withdrawEvents[i].args.src] =
-      pndCollateralizedTXJPBalanceByAddress[withdrawEvents[i].args.src].sub(
-        withdrawEvents[i].args.amount
-      );
+      pndCollateralizedTXJPBalanceByAddress[withdrawEvents[i].args.src] -
+      withdrawEvents[i].args.amount;
   }
 
   const sum1 = Object.values(pndCollateralizedTXJPBalanceByAddress).reduce(
-    (acc, bigNumber) => acc.add(bigNumber),
-    ethers.BigNumber.from(0)
+    (acc, balance) => acc + balance,
+    0n
   );
 
   const result: Record<string, string> = {};
   for (const [key, value] of Object.entries(
     pndCollateralizedTXJPBalanceByAddress
   )) {
-    if (!IGNORE_LIST.includes(key.toLowerCase()) && value.gt(0))
+    if (!IGNORE_LIST.includes(key.toLowerCase()) && value > 0)
       result[key] = value.toString();
   }
 
   const sum2 = Object.values(result).reduce(
-    (acc, bigNumber) => acc.add(bigNumber),
-    ethers.BigNumber.from(0)
+    (acc, balance) => acc + BigInt(balance),
+    0n
   );
 
   console.log("SUM: ", sum1.toString(), sum2.toString());
