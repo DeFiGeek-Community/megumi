@@ -7,8 +7,8 @@ import { TemplateType, TemplateArgs } from "../scripts/types";
 import { deployFactoryAndFeePoolFixture } from "./lib/fixtures";
 
 describe("Factory", function () {
-  const templateName = ethers.utils.formatBytes32String(TemplateType.STANDARD);
-  const initialSupply = ethers.utils.parseEther("1000");
+  const templateName = ethers.encodeBytes32String(TemplateType.STANDARD);
+  const initialSupply = ethers.parseEther("1000");
 
   async function deployFactoryAndTemplateFixture() {
     const { factory, feePool, owner, addr1, addr2 } = await loadFixture(
@@ -16,14 +16,14 @@ describe("Factory", function () {
     );
 
     const Template = await ethers.getContractFactory(TemplateType.STANDARD);
-    const template = await Template.deploy(factory.address, feePool.address);
-    await template.deployed();
+    const template = await Template.deploy(factory.target, feePool.target);
+    await template.waitForDeployment();
 
     await factory.addTemplate(
       templateName,
-      template.address,
-      Template.interface.getSighash("initialize"),
-      Template.interface.getSighash("initializeTransfer")
+      template.target,
+      Template.interface.getFunction("initialize")!.selector,
+      Template.interface.getFunction("initializeTransfer")!.selector
     );
 
     return {
@@ -51,8 +51,8 @@ describe("Factory", function () {
       const { factory, template, addr1 } = await loadFixture(
         deployFactoryAndTemplateFixture
       );
-      const templateName2 = ethers.utils.hexZeroPad(
-        ethers.utils.hexlify(ethers.utils.toUtf8Bytes("sale2")),
+      const templateName2 = ethers.zeroPadValue(
+        ethers.hexlify(ethers.toUtf8Bytes("sale2")),
         32
       );
       await expect(
@@ -60,9 +60,9 @@ describe("Factory", function () {
           .connect(addr1)
           .addTemplate(
             templateName2,
-            template.address,
-            template.interface.getSighash("initialize"),
-            template.interface.getSighash("initializeTransfer")
+            template.target,
+            template.interface.getFunction("initialize")!.selector,
+            template.interface.getFunction("initializeTransfer")!.selector
           )
       ).to.be.reverted;
     });
@@ -74,9 +74,9 @@ describe("Factory", function () {
       await expect(
         factory.addTemplate(
           templateName,
-          template.address,
-          template.interface.getSighash("initialize"),
-          template.interface.getSighash("initializeTransfer")
+          template.target,
+          template.interface.getFunction("initialize")!.selector,
+          template.interface.getFunction("initializeTransfer")!.selector
         )
       ).to.be.reverted;
     });
@@ -87,7 +87,7 @@ describe("Factory", function () {
       const { factory } = await loadFixture(deployFactoryAndTemplateFixture);
       await factory.removeTemplate(templateName);
       const templateInfo = await factory.templates(templateName);
-      expect(templateInfo[0]).to.equal(ethers.constants.AddressZero);
+      expect(templateInfo[0]).to.equal(ethers.ZeroAddress);
     });
 
     it("removeTemplate_success_2", async function () {
@@ -101,10 +101,8 @@ describe("Factory", function () {
       const notRegisteredtemplateInfo = await factory.templates(
         notRegisteredTemplateName
       );
-      expect(templateInfo[0]).to.equal(template.address);
-      expect(notRegisteredtemplateInfo[0]).to.equal(
-        ethers.constants.AddressZero
-      );
+      expect(templateInfo[0]).to.equal(template.target);
+      expect(notRegisteredtemplateInfo[0]).to.equal(ethers.ZeroAddress);
     });
 
     it("removeTemplate_fail_1", async function () {
@@ -123,17 +121,17 @@ describe("Factory", function () {
       );
       const Token = await ethers.getContractFactory("TestERC20");
       const token = await Token.deploy("", "", initialSupply);
-      await token.deployed();
+      await token.waitForDeployment();
 
-      const depositAmount = ethers.utils.parseEther("1");
-      await token.approve(factory.address, depositAmount);
+      const depositAmount = ethers.parseEther("1");
+      await token.approve(factory.target, depositAmount);
 
       await expect(
         deployMerkleAirdrop(
           TemplateType.STANDARD,
           factory,
-          [owner.address, airdropInfo.merkleRoot, token.address, 0n],
-          ethers.utils.parseEther("0.01").toBigInt()
+          [owner.address, airdropInfo.merkleRoot, token.target.toString(), 0n],
+          ethers.parseEther("0.01")
         )
       ).to.not.be.reverted;
     });
@@ -145,19 +143,19 @@ describe("Factory", function () {
       );
       const Token = await ethers.getContractFactory("TestERC20");
       const token = await Token.deploy("", "", initialSupply);
-      await token.deployed();
+      await token.waitForDeployment();
 
-      const abiCoder = ethers.utils.defaultAbiCoder;
+      const abiCoder = ethers.AbiCoder.defaultAbiCoder();
       const args = abiCoder.encode(TemplateArgs[TemplateType.STANDARD], [
         owner.address,
         airdropInfo.merkleRoot,
-        token.address,
+        token.target,
         0n,
       ]);
 
       const notRegisteredTemplateName =
         "0x11116c6554656d706c6174655631000000000000000000000000000000000000";
-      const nonce = ethers.utils.formatBytes32String(Math.random().toString());
+      const nonce = ethers.encodeBytes32String(Math.random().toString());
       await expect(
         factory.deployMerkleAirdrop(notRegisteredTemplateName, nonce, args)
       ).to.be.revertedWith("No such template in the list.");
@@ -169,14 +167,14 @@ describe("Factory", function () {
       );
       const Token = await ethers.getContractFactory("TestERC20");
       const token = await Token.deploy("", "", initialSupply);
-      await token.deployed();
+      await token.waitForDeployment();
 
       await expect(
         deployMerkleAirdrop(
           TemplateType.STANDARD,
           factory,
-          [owner.address, airdropInfo.merkleRoot, token.address, 0n],
-          ethers.utils.parseEther("0.01").toBigInt(),
+          [owner.address, airdropInfo.merkleRoot, token.target.toString(), 0n],
+          ethers.parseEther("0.01"),
           airdropInfo.uuid
         )
       ).to.not.be.reverted;
@@ -184,8 +182,8 @@ describe("Factory", function () {
         deployMerkleAirdrop(
           TemplateType.STANDARD,
           factory,
-          [owner.address, airdropInfo.merkleRoot, token.address, 0n],
-          ethers.utils.parseEther("0.01").toBigInt(),
+          [owner.address, airdropInfo.merkleRoot, token.target.toString(), 0n],
+          ethers.parseEther("0.01"),
           airdropInfo.uuid
         )
       ).to.be.reverted;

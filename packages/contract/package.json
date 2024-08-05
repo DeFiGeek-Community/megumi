@@ -27,12 +27,11 @@
   },
   "homepage": "https://github.com/DeFiGeek-Community/merkle-airdrop-tool#readme",
   "dependencies": {
-    "@openzeppelin/contracts": "^5.0.0",
-    "ethers": "^5.7.2"
+    "@openzeppelin/contracts": "^5.0.0"
   },
   "devDependencies": {
-    "@nomicfoundation/hardhat-toolbox": "^2.0.2",
-    "@nomiclabs/hardhat-etherscan": "^3.1.7",
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "@nomicfoundation/hardhat-verify": "^2.0.9",
     "hardhat": "^2.12.6",
     "hardhat-deploy": "^0.11.45",
     "hardhat-gas-reporter": "^1.0.9",

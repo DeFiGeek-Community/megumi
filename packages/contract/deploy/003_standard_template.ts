@@ -1,6 +1,5 @@
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { DeployFunction } from "hardhat-deploy/types";
-import { Contract } from "ethers";
 import { TemplateType } from "../scripts/types";
 import {
   deploy,
@@ -22,7 +21,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     throw new Error("factory or feepool address is null");
   }
 
-  let Template: Contract;
+  let Template;
   if (!existsDeployedContract(network.name, codename)) {
     console.log(`${codename} is deploying with factory=${factoryAddress}...`);
 
@@ -41,7 +40,12 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   }
 
   try {
-    await addTemplate(network.name, codename, factoryAddress, Template.address);
+    await addTemplate(
+      network.name,
+      codename,
+      factoryAddress,
+      Template.target.toString()
+    );
   } catch (e: any) {
     console.trace(e.message);
   }

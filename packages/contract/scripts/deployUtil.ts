@@ -46,7 +46,7 @@ export async function deploy(contractName: string, opts: Options) {
   });
 
   const _Contract: Contract = await _Factory.deploy(...opts.args);
-  await _Contract.deployed();
+  await _Contract.waitForDeployment();
   if (opts.log)
     console.log(
       `${contractName} is deployed as ${
@@ -106,19 +106,21 @@ export async function addTemplate(
   /*
       3. Finding unique name
   */
-  const name = utils.formatBytes32String(templateName);
-  const initializeSignature = Template.interface.getSighash("initialize");
-  const transferSignature = Template.interface.getSighash("initializeTransfer");
+  const name = ethers.encodeBytes32String(templateName);
+  const initializeSignature =
+    Template.interface.getFunction("initialize")!.selector;
+  const transferSignature =
+    Template.interface.getFunction("initializeTransfer")!.selector;
 
   /*
       4. Register the template to the Factory.
   */
   console.log(
-    `"mapping(${name} => ${Template.address})" is being registered to the Factory... (Factory.owner = ${foundation.address})`
+    `"mapping(${name} => ${template.target})" is being registered to the Factory... (Factory.owner = ${foundation.address})`
   );
   let tx = await Factory.connect(foundation).addTemplate(
     name,
-    Template.address,
+    template.target,
     initializeSignature,
     transferSignature
   );
@@ -131,7 +133,7 @@ export async function addTemplate(
     chalk.green.bgBlack.bold(
       `[Finished] addTemplate :: ${name}=${await Factory.templates(
         name
-      )} is registered to factory=${Factory.address}\n\n`
+      )} is registered to factory=${factory.target}\n\n`
     )
   );
 

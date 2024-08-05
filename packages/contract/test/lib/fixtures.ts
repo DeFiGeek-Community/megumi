@@ -5,10 +5,10 @@ export async function deployFactoryAndFeePoolFixture() {
 
   const Factory = await ethers.getContractFactory("Factory");
   const factory = await Factory.deploy(owner.address);
-  await factory.deployed();
+  await factory.waitForDeployment();
   const FeePool = await ethers.getContractFactory("FeePool");
   const feePool = await FeePool.deploy(owner.address);
-  await feePool.deployed();
+  await feePool.waitForDeployment();
 
   return { factory, feePool, owner, addr1, addr2 };
 }

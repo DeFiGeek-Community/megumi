@@ -8,7 +8,7 @@ import { MaxUint, sampleAddress, airdropInfo } from "../lib/constants";
 import { TemplateType } from "../../scripts/types";
 
 describe("MerkleAirdropStandard contract", function () {
-  const templateName = ethers.utils.formatBytes32String(TemplateType.STANDARD);
+  const templateName = ethers.encodeBytes32String(TemplateType.STANDARD);
 
   async function deployFactoryAndTemplateFixture() {
     const { factory, feePool, owner, addr1, addr2 } = await loadFixture(
@@ -16,23 +16,23 @@ describe("MerkleAirdropStandard contract", function () {
     );
 
     const Template = await ethers.getContractFactory(TemplateType.STANDARD);
-    const template = await Template.deploy(factory.address, feePool.address);
-    await template.deployed();
+    const template = await Template.deploy(factory.target, feePool.target);
+    await template.waitForDeployment();
 
     await factory.addTemplate(
       templateName,
-      template.address,
-      Template.interface.getSighash("initialize"),
-      Template.interface.getSighash("initializeTransfer")
+      template.target,
+      Template.interface.getFunction("initialize")!.selector,
+      Template.interface.getFunction("initializeTransfer")!.selector
     );
 
     const TestERC20 = await ethers.getContractFactory("TestERC20");
     const testERC20 = await TestERC20.deploy(
       "TestERC20",
       "TEST",
-      ethers.utils.parseEther("100")
+      ethers.parseEther("100")
     );
-    await testERC20.deployed();
+    await testERC20.waitForDeployment();
 
     return {
       factory,
@@ -51,8 +51,13 @@ describe("MerkleAirdropStandard contract", function () {
     const merkleAirdrop = await deployMerkleAirdrop(
       TemplateType.STANDARD,
       data.factory,
-      [data.owner.address, airdropInfo.merkleRoot, data.testERC20.address, 0n],
-      ethers.utils.parseEther("0.01").toBigInt(),
+      [
+        data.owner.address,
+        airdropInfo.merkleRoot,
+        data.testERC20.target.toString(),
+        0n,
+      ],
+      ethers.parseEther("0.01"),
       airdropInfo.uuid
     );
 
@@ -65,8 +70,8 @@ describe("MerkleAirdropStandard contract", function () {
         deployFactoryAndTemplateFixture
       );
 
-      expect(factory.address).to.be.ok;
-      expect(template.address).to.be.ok;
+      expect(factory.target).to.be.ok;
+      expect(template.target).to.be.ok;
     });
   });
 
@@ -79,17 +84,22 @@ describe("MerkleAirdropStandard contract", function () {
       const merkleAirdrop = await deployMerkleAirdrop(
         TemplateType.STANDARD,
         factory,
-        [owner.address, airdropInfo.merkleRoot, testERC20.address, 0n],
-        ethers.utils.parseEther("0.01").toBigInt()
+        [
+          owner.address,
+          airdropInfo.merkleRoot,
+          testERC20.target.toString(),
+          0n,
+        ],
+        ethers.parseEther("0.01")
       );
 
-      expect(merkleAirdrop.address).to.be.ok;
+      expect(merkleAirdrop.target).to.be.ok;
       expect(await merkleAirdrop.owner()).to.be.eq(owner.address);
-      expect(await merkleAirdrop.token()).to.be.eq(testERC20.address);
+      expect(await merkleAirdrop.token()).to.be.eq(testERC20.target);
       expect(await merkleAirdrop.merkleRoot()).to.be.eq(airdropInfo.merkleRoot);
       // Fee poolの残高がregistrationFeeであることを確認
-      expect(await ethers.provider.getBalance(feePool.address)).to.be.eq(
-        ethers.utils.parseEther("0.01")
+      expect(await ethers.provider.getBalance(feePool.target)).to.be.eq(
+        ethers.parseEther("0.01")
       );
     });
 
@@ -102,8 +112,13 @@ describe("MerkleAirdropStandard contract", function () {
         deployMerkleAirdrop(
           TemplateType.STANDARD,
           factory,
-          [owner.address, airdropInfo.merkleRoot, testERC20.address, 0n],
-          ethers.utils.parseEther("0.1").toBigInt(),
+          [
+            owner.address,
+            airdropInfo.merkleRoot,
+            testERC20.target.toString(),
+            0n,
+          ],
+          ethers.parseEther("0.1"),
           airdropInfo.uuid
         )
       ).to.be.reverted;
@@ -117,18 +132,23 @@ describe("MerkleAirdropStandard contract", function () {
       const claimInfo = airdropInfo.claims[sampleAddress];
       const amount = BigInt(claimInfo.amount);
 
-      await testERC20.approve(factory.address, MaxUint);
+      await testERC20.approve(factory.target, MaxUint);
 
       const airdrop = await deployMerkleAirdrop(
         TemplateType.STANDARD,
         factory,
-        [owner.address, airdropInfo.merkleRoot, testERC20.address, amount],
-        ethers.utils.parseEther("0.01").toBigInt(),
+        [
+          owner.address,
+          airdropInfo.merkleRoot,
+          testERC20.target.toString(),
+          amount,
+        ],
+        ethers.parseEther("0.01"),
         airdropInfo.uuid
       );
 
-      expect(await testERC20.balanceOf(airdrop.address)).to.be.eq(amount);
-      expect(await testERC20.balanceOf(factory.address)).to.be.eq(0);
+      expect(await testERC20.balanceOf(airdrop.target)).to.be.eq(amount);
+      expect(await testERC20.balanceOf(factory.target)).to.be.eq(0);
     });
 
     it("Should fail initialize when token balance is not enough", async function () {
@@ -136,16 +156,21 @@ describe("MerkleAirdropStandard contract", function () {
         deployFactoryAndTemplateFixture
       );
 
-      const amount = ethers.utils.parseEther("101").toBigInt();
+      const amount = ethers.parseEther("101");
 
-      await testERC20.approve(factory.address, MaxUint);
+      await testERC20.approve(factory.target, MaxUint);
 
       await expect(
         deployMerkleAirdrop(
           TemplateType.STANDARD,
           factory,
-          [owner.address, airdropInfo.merkleRoot, testERC20.address, amount],
-          ethers.utils.parseEther("0.01").toBigInt(),
+          [
+            owner.address,
+            airdropInfo.merkleRoot,
+            testERC20.target.toString(),
+            amount,
+          ],
+          ethers.parseEther("0.01"),
           airdropInfo.uuid
         )
       ).to.be.revertedWithCustomError(testERC20, "ERC20InsufficientBalance");
@@ -158,16 +183,13 @@ describe("MerkleAirdropStandard contract", function () {
         deployAirdropFixture
       );
 
-      await testERC20.transfer(
-        merkleAirdrop.address,
-        ethers.utils.parseEther("1")
-      );
+      await testERC20.transfer(merkleAirdrop.target, ethers.parseEther("1"));
       await expect(
         merkleAirdrop.withdrawDepositedToken()
       ).to.changeTokenBalances(
         testERC20,
         [merkleAirdrop, owner],
-        [ethers.utils.parseEther("-1"), ethers.utils.parseEther("1")]
+        [ethers.parseEther("-1"), ethers.parseEther("1")]
       );
     });
 
@@ -194,20 +216,20 @@ describe("MerkleAirdropStandard contract", function () {
       );
 
       const claimInfo = airdropInfo.claims[sampleAddress];
-      const amount = BigNumber.from(claimInfo.amount);
-      await testERC20.transfer(merkleAirdrop.address, amount);
+      const amount = BigInt(claimInfo.amount);
+      await testERC20.transfer(merkleAirdrop.target, amount);
       await expect(
         merkleAirdrop.claim(
           claimInfo.index,
           sampleAddress,
           claimInfo.amount,
           claimInfo.proof,
-          { value: ethers.utils.parseEther("0.0002") }
+          { value: ethers.parseEther("0.0002") }
         )
       ).to.changeTokenBalance(testERC20, sampleAddress, amount);
       // Fee poolの残高がregistrationFee + claimFeeであることを確認
-      expect(await ethers.provider.getBalance(feePool.address)).to.be.eq(
-        ethers.utils.parseEther("0.0101")
+      expect(await ethers.provider.getBalance(feePool.target)).to.be.eq(
+        ethers.parseEther("0.0101")
       );
       expect(await merkleAirdrop.isClaimed(claimInfo.index)).to.be.true;
     });
@@ -218,15 +240,15 @@ describe("MerkleAirdropStandard contract", function () {
       );
 
       const claimInfo = airdropInfo.claims[sampleAddress];
-      const amount = BigNumber.from(claimInfo.amount);
-      await testERC20.transfer(merkleAirdrop.address, amount);
+      const amount = BigInt(claimInfo.amount);
+      await testERC20.transfer(merkleAirdrop.target, amount);
       await expect(
         merkleAirdrop.claim(
           claimInfo.index,
           sampleAddress,
           claimInfo.amount,
           claimInfo.proof,
-          { value: ethers.utils.parseEther("0.0001") }
+          { value: ethers.parseEther("0.0001") }
         )
       ).to.be.revertedWithCustomError(merkleAirdrop, "IncorrectAmount");
     });
@@ -237,15 +259,15 @@ describe("MerkleAirdropStandard contract", function () {
       );
 
       const claimInfo = airdropInfo.claims[sampleAddress];
-      const amount = BigNumber.from(claimInfo.amount);
-      await testERC20.transfer(merkleAirdrop.address, amount);
+      const amount = BigInt(claimInfo.amount);
+      await testERC20.transfer(merkleAirdrop.target, amount);
       await expect(
         merkleAirdrop.claim(
           claimInfo.index,
           sampleAddress,
-          BigNumber.from(claimInfo.amount).add(1),
+          BigInt(claimInfo.amount) + 1n,
           claimInfo.proof,
-          { value: ethers.utils.parseEther("0.0002") }
+          { value: ethers.parseEther("0.0002") }
         )
       ).to.be.revertedWithCustomError(merkleAirdrop, "AmountNotEnough");
     });
@@ -256,15 +278,15 @@ describe("MerkleAirdropStandard contract", function () {
       );
 
       const claimInfo = airdropInfo.claims[sampleAddress];
-      const amount = BigNumber.from(claimInfo.amount);
-      await testERC20.transfer(merkleAirdrop.address, amount);
+      const amount = BigInt(claimInfo.amount);
+      await testERC20.transfer(merkleAirdrop.target, amount);
       await expect(
         merkleAirdrop.claim(
           claimInfo.index,
           addr1.address,
           claimInfo.amount,
           claimInfo.proof,
-          { value: ethers.utils.parseEther("0.0002") }
+          { value: ethers.parseEther("0.0002") }
         )
       ).to.be.revertedWithCustomError(merkleAirdrop, "InvalidProof");
     });
@@ -275,15 +297,15 @@ describe("MerkleAirdropStandard contract", function () {
       );
 
       const claimInfo = airdropInfo.claims[sampleAddress];
-      const amount = BigNumber.from(claimInfo.amount);
-      await testERC20.transfer(merkleAirdrop.address, amount);
+      const amount = BigInt(claimInfo.amount);
+      await testERC20.transfer(merkleAirdrop.target, amount);
       await expect(
         merkleAirdrop.claim(
           claimInfo.index,
           sampleAddress,
-          BigNumber.from(claimInfo.amount).sub(1),
+          BigInt(claimInfo.amount) - 1n,
           claimInfo.proof,
-          { value: ethers.utils.parseEther("0.0002") }
+          { value: ethers.parseEther("0.0002") }
         )
       ).to.be.revertedWithCustomError(merkleAirdrop, "InvalidProof");
     });
@@ -294,8 +316,8 @@ describe("MerkleAirdropStandard contract", function () {
       );
 
       const claimInfo = airdropInfo.claims[sampleAddress];
-      const amount = BigNumber.from(claimInfo.amount);
-      await testERC20.transfer(merkleAirdrop.address, amount);
+      const amount = BigInt(claimInfo.amount);
+      await testERC20.transfer(merkleAirdrop.target, amount);
       await expect(
         merkleAirdrop.claim(
           claimInfo.index,
@@ -305,7 +327,7 @@ describe("MerkleAirdropStandard contract", function () {
             "0xe0c04daac9552fb5491797ebf760e5275d4d7f35d37a8dae3295d701be1de2b5",
             "0x70a3c131f80bc21341be1df819ba8f542b015d5e9587b45d8a30c45f400577ed",
           ],
-          { value: ethers.utils.parseEther("0.0002") }
+          { value: ethers.parseEther("0.0002") }
         )
       ).to.be.revertedWithCustomError(merkleAirdrop, "InvalidProof");
     });
@@ -316,8 +338,8 @@ describe("MerkleAirdropStandard contract", function () {
       );
 
       const claimInfo = airdropInfo.claims[sampleAddress];
-      const amount = BigNumber.from(claimInfo.amount);
-      await testERC20.transfer(merkleAirdrop.address, amount);
+      const amount = BigInt(claimInfo.amount);
+      await testERC20.transfer(merkleAirdrop.target, amount);
 
       await expect(
         merkleAirdrop.claim(
@@ -325,7 +347,7 @@ describe("MerkleAirdropStandard contract", function () {
           sampleAddress,
           claimInfo.amount,
           claimInfo.proof,
-          { value: ethers.utils.parseEther("0.0002") }
+          { value: ethers.parseEther("0.0002") }
         )
       ).to.not.be.reverted;
 
@@ -335,7 +357,7 @@ describe("MerkleAirdropStandard contract", function () {
           sampleAddress,
           claimInfo.amount,
           claimInfo.proof,
-          { value: ethers.utils.parseEther("0.0002") }
+          { value: ethers.parseEther("0.0002") }
         )
       ).to.be.revertedWithCustomError(merkleAirdrop, "AlreadyClaimed");
     });
@@ -348,21 +370,18 @@ describe("MerkleAirdropStandard contract", function () {
         deployAirdropFixture
       );
       const claimInfo = airdropInfo.claims[sampleAddress];
-      const amount = BigNumber.from(claimInfo.amount);
-      await testERC20.transfer(merkleAirdrop.address, amount);
+      const amount = BigInt(claimInfo.amount);
+      await testERC20.transfer(merkleAirdrop.target, amount);
       await merkleAirdrop.claim(
         claimInfo.index,
         sampleAddress,
         claimInfo.amount,
         claimInfo.proof,
-        { value: ethers.utils.parseEther("0.0002") }
+        { value: ethers.parseEther("0.0002") }
       );
       await expect(merkleAirdrop.withdrawClaimFee()).to.changeEtherBalances(
         [merkleAirdrop, owner],
-        [
-          `-${ethers.utils.parseEther("0.0001")}`,
-          ethers.utils.parseEther("0.0001"),
-        ]
+        [`-${ethers.parseEther("0.0001")}`, ethers.parseEther("0.0001")]
       );
     });
 
@@ -372,14 +391,14 @@ describe("MerkleAirdropStandard contract", function () {
         deployAirdropFixture
       );
       const claimInfo = airdropInfo.claims[sampleAddress];
-      const amount = BigNumber.from(claimInfo.amount);
-      await testERC20.transfer(merkleAirdrop.address, amount);
+      const amount = BigInt(claimInfo.amount);
+      await testERC20.transfer(merkleAirdrop.target, amount);
       await merkleAirdrop.claim(
         claimInfo.index,
         sampleAddress,
         claimInfo.amount,
         claimInfo.proof,
-        { value: ethers.utils.parseEther("0.0002") }
+        { value: ethers.parseEther("0.0002") }
       );
       await expect(merkleAirdrop.connect(addr1).withdrawClaimFee()).to.be
         .reverted;
