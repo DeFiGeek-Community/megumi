@@ -1,20 +1,24 @@
 import { network, run } from "hardhat";
 import { readFileSync } from "fs";
 import { TemplateType } from "../scripts/types";
+import { getFoundation } from "./deployUtil";
 
 async function main() {
   const basePath = `deployments/${network.name}/`;
+  const foundation = await getFoundation();
 
   // Factory
   const factoryAddress = readFileSync(basePath + "Factory").toString();
   await run(`verify:verify`, {
     address: factoryAddress,
+    constructorArguments: [foundation.address],
   });
 
   // FeePool
   const feePoolAddress = readFileSync(basePath + "FeePool").toString();
   await run(`verify:verify`, {
     address: feePoolAddress,
+    constructorArguments: [foundation.address],
   });
 
   // Standard template
