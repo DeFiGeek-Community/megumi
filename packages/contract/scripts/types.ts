@@ -1,3 +1,5 @@
+import { Standard, LinearVesting } from "../typechain-types";
+
 export const TemplateType = {
   STANDARD: "Standard",
   LINEAR_VESTING: "LinearVesting",
@@ -18,4 +20,8 @@ export const TemplateArgs: { [key in TemplateType]: string[] } = {
     "uint256",
     "uint256",
   ],
+};
+export type TemplateContractMap = {
+  Standard: Standard;
+  LinearVesting: LinearVesting;
 };

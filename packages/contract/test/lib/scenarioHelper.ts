@@ -1,8 +1,10 @@
 import { ethers } from "hardhat";
-import { TemplateType, TemplateArgs } from "../../scripts/types";
-// import { Factory } from "../../typechain-types/contracts/Factory.sol/Factory";
-// import { Factory } from "../../typechain-types";
 import type { TransactionReceipt } from "ethers";
+import {
+  TemplateType,
+  TemplateArgs,
+  TemplateContractMap,
+} from "../../scripts/types";
 import { Factory } from "../../typechain-types/contracts/Factory";
 
 export async function sendERC20(
@@ -60,7 +62,7 @@ export async function deployMerkleAirdrop<T extends TemplateType>(
   args: TemplateArgs[T],
   creationFee: bigint,
   uuid?: string // nonce for create2
-) {
+): Promise<TemplateContractMap[T]> {
   const templateName = ethers.encodeBytes32String(type);
   const abiCoder = ethers.AbiCoder.defaultAbiCoder();
   const encodedArgs: string = abiCoder.encode(TemplateArgs[type], args);
@@ -75,7 +77,7 @@ export async function deployMerkleAirdrop<T extends TemplateType>(
   const receipt = await tx.wait();
   const templateAddr = await getTemplateAddr(receipt);
   const Airdrop = await ethers.getContractFactory(type);
-  return Airdrop.attach(templateAddr);
+  return Airdrop.attach(templateAddr) as TemplateContractMap[T];
 }
 
 export async function simulateDeployMerkleAirdrop<T extends TemplateType>(

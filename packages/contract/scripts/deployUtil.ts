@@ -1,8 +1,9 @@
 import { readFileSync, writeFileSync, existsSync } from "fs";
-import { Contract, utils } from "ethers";
+import { Contract, Interface } from "ethers";
 import { ethers, network } from "hardhat";
-import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
+import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
 import chalk from "chalk";
+import { Factory } from "../typechain-types";
 
 type Options = {
   from?: SignerWithAddress | undefined;
@@ -55,13 +56,13 @@ export async function deploy(contractName: string, opts: Options) {
     );
   writeFileSync(
     `deployments/${network.name}/${contractName}`,
-    _Contract.address
+    _Contract.target.toString()
   );
   return _Contract;
 }
 
 export function genABI(filename: string, subdir?: string) {
-  return new utils.Interface(
+  return new Interface(
     JSON.parse(
       readFileSync(
         `artifacts/contracts/${
@@ -82,16 +83,10 @@ export async function addTemplate(
         1. Instanciate the deployed factory and template.
     */
   const foundation = await getFoundation();
-  const Factory = new Contract(
-    deployedFactoryAddress,
-    genABI("Factory"),
-    foundation
-  );
-  const Template = new Contract(
-    deployedTemplateAddress,
-    genABI(templateName, "templates"),
-    foundation
-  );
+  const FFactory = await ethers.getContractFactory("Factory", foundation);
+  const Factory = FFactory.attach(deployedFactoryAddress) as Factory;
+  const FTemplate = await ethers.getContractFactory(templateName, foundation);
+  const Template = FTemplate.attach(deployedTemplateAddress);
 
   /*
         2. consistency check between the embedded factory addr in the template and the on-chain factory itself.
@@ -116,11 +111,11 @@ export async function addTemplate(
       4. Register the template to the Factory.
   */
   console.log(
-    `"mapping(${name} => ${template.target})" is being registered to the Factory... (Factory.owner = ${foundation.address})`
+    `"mapping(${name} => ${Template.target})" is being registered to the Factory... (Factory.owner = ${foundation.address})`
   );
   let tx = await Factory.connect(foundation).addTemplate(
     name,
-    template.target,
+    Template.target.toString(),
     initializeSignature,
     transferSignature
   );
@@ -133,7 +128,7 @@ export async function addTemplate(
     chalk.green.bgBlack.bold(
       `[Finished] addTemplate :: ${name}=${await Factory.templates(
         name
-      )} is registered to factory=${factory.target}\n\n`
+      )} is registered to factory=${Factory.target}\n\n`
     )
   );
 

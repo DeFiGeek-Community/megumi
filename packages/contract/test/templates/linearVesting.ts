@@ -5,7 +5,6 @@ import {
 } from "@nomicfoundation/hardhat-network-helpers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
-import { BigNumber } from "ethers";
 import { deployMerkleAirdrop } from "../lib/scenarioHelper";
 import { deployFactoryAndFeePoolFixture } from "../lib/fixtures";
 import { MaxUint, sampleAddress, airdropInfo } from "../lib/constants";
