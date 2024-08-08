@@ -1,7 +1,10 @@
 import { expect } from "chai";
 import { ethers } from "hardhat";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
-import { deployMerkleAirdrop } from "./lib/scenarioHelper";
+import {
+  deployMerkleAirdrop,
+  simulateDeployMerkleAirdrop,
+} from "./lib/scenarioHelper";
 import { airdropInfo } from "./lib/constants";
 import { TemplateType, TemplateArgs } from "../scripts/types";
 import { deployFactoryAndFeePoolFixture } from "./lib/fixtures";
@@ -187,6 +190,32 @@ describe("Factory", function () {
           airdropInfo.uuid
         )
       ).to.be.reverted;
+    });
+
+    it("Should return different address with the same salt from the different address", async function () {
+      const { factory, owner, addr1 } = await loadFixture(
+        deployFactoryAndTemplateFixture
+      );
+      const Token = await ethers.getContractFactory("TestERC20");
+      const token = await Token.deploy("", "", initialSupply);
+      await token.waitForDeployment();
+
+      const address1 = await simulateDeployMerkleAirdrop(
+        TemplateType.STANDARD,
+        factory,
+        [owner.address, airdropInfo.merkleRoot, token.target.toString(), 0n],
+        ethers.parseEther("0.01"),
+        airdropInfo.uuid
+      );
+      const address2 = await simulateDeployMerkleAirdrop(
+        TemplateType.STANDARD,
+        factory.connect(addr1),
+        [owner.address, airdropInfo.merkleRoot, token.target.toString(), 0n],
+        ethers.parseEther("0.01"),
+        airdropInfo.uuid
+      );
+
+      expect(address1).to.not.be.eq(address2);
     });
   });
 });

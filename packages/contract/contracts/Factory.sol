@@ -102,7 +102,9 @@ contract Factory is Ownable {
         address implementation_,
         bytes32 nonce_
     ) internal returns (address result) {
-        bytes32 salt = keccak256(abi.encodePacked(implementation_, nonce_));
+        bytes32 salt = keccak256(
+            abi.encodePacked(implementation_, nonce_, msg.sender)
+        );
         // OpenZeppelin Contracts (last updated v4.8.0) (proxy/Clones.sol)
         assembly {
             mstore(
