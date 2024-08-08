@@ -37,9 +37,13 @@ async function main() {
 
   console.log("SUM: ", sum.toString());
 
+  const entries = Object.entries(result);
+  entries.sort((a, b) => parseInt(b[1]) - parseInt(a[1]));
+  const sortedResult = Object.fromEntries(entries);
+
   writeFileSync(
     "./scripts/snapshot_sample/temp/snapshot_merge.json",
-    JSON.stringify(result, null, 2)
+    JSON.stringify(sortedResult, null, 2)
   );
 }
 
