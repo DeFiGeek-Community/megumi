@@ -17,7 +17,8 @@ export const IGNORE_LIST = [
   "0x00000000009726632680FB29d3F7A9734E3010E2", // Rainbowスタック
   "0x000000fee13a103A10D593b9AE06b3e05F2E7E1c", // ルータースタック
   "0xdD9f24EfC84D93deeF3c8745c837ab63E80Abd27", // ルータースタック
-  "0xeFbF49285c3d3dc16bd2634E2E06b16651Ba0bdb", // 旧Votiumスタック
+  "0xeFbF49285c3d3dc16bd2634E2E06b16651Ba0bdb", // 旧Votiumスタック,
+  "0xAA59F501c92092E624D30Cff77eAFf5EA4E7BfA2", // pnd CJPY （別途内訳分配）
 ].map((v) => v.toLowerCase());
 
 // export const SNAPSHOT_BLOCK = 18979127;
