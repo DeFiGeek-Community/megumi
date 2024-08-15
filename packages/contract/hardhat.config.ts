@@ -1,13 +1,16 @@
-require("@nomicfoundation/hardhat-toolbox");
-require("@nomiclabs/hardhat-etherscan");
-require("hardhat-gas-reporter");
-require("dotenv").config();
+import { HardhatUserConfig } from "hardhat/config";
+import "@nomicfoundation/hardhat-toolbox";
+import "@nomicfoundation/hardhat-ethers";
+import "@nomicfoundation/hardhat-verify";
+import "hardhat-deploy";
+import "hardhat-gas-reporter";
+import "dotenv/config";
 
 const { INFURA_KEY, ETHERSCAN_API_KEY, PRIVATE_KEY } = process.env;
 
-module.exports = {
+const config: HardhatUserConfig = {
   solidity: {
-    version: "0.8.17",
+    version: "0.8.20",
     settings: {
       optimizer: {
         enabled: true,
@@ -25,6 +28,10 @@ module.exports = {
       url: `https://goerli.infura.io/v3/${INFURA_KEY}`,
       accounts: [`${PRIVATE_KEY}`],
     },
+    sepolia: {
+      url: `https://sepolia.infura.io/v3/${INFURA_KEY}`,
+      accounts: [`${PRIVATE_KEY}`],
+    },
     hardhat: {
       forking: {
         url: `https://mainnet.infura.io/v3/${INFURA_KEY}`,
@@ -38,3 +45,4 @@ module.exports = {
     enabled: true,
   },
 };
+export default config;

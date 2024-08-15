@@ -2,11 +2,18 @@
   "name": "@merkle-airdrop-tool/contract",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
   "scripts": {
-    "deploy:local": "hardhat run scripts/deploy.js --network localhost",
-    "deploy:mainnet": "hardhat run scripts/deploy.js --network mainnet",
-    "deploy:goerli": "hardhat run scripts/deploy.js --network goerli"
+    "node": "npx hardhat node --no-deploy --hostname 0.0.0.0 --show-stack-traces",
+    "deploy:local": "hardhat deploy --network localhost",
+    "deploy:mainnet": "hardhat deploy --network mainnet",
+    "deploy:sepolia": "hardhat deploy --network sepolia",
+    "verify:mainnet": "npx hardhat run scripts/verify.ts --network mainnet",
+    "verify:sepolia": "npx hardhat run scripts/verify.ts --network sepolia",
+    "compile": "hardhat compile",
+    "test": "hardhat test",
+    "snapshot:pnd_txjp": "npx hardhat run scripts/snapshot_sample/snapshot_pnd_txjp.ts",
+    "snapshot:txjp": "npx hardhat run scripts/snapshot_sample/snapshot_txjp.ts",
+    "snapshot:merge": "npx hardhat run scripts/snapshot_sample/snapshot_merge.ts"
   },
   "repository": {
     "type": "git",
@@ -20,13 +27,13 @@
   },
   "homepage": "https://github.com/DeFiGeek-Community/merkle-airdrop-tool#readme",
   "dependencies": {
-    "@openzeppelin/contracts": "^4.8.0",
-    "ethers": "^5.7.2"
+    "@openzeppelin/contracts": "^5.0.0"
   },
   "devDependencies": {
-    "@nomicfoundation/hardhat-toolbox": "^2.0.2",
-    "@nomiclabs/hardhat-etherscan": "^3.1.7",
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "@nomicfoundation/hardhat-verify": "^2.0.9",
     "hardhat": "^2.12.6",
+    "hardhat-deploy": "^0.11.45",
     "hardhat-gas-reporter": "^1.0.9",
     "ts-node": "^10.9.1"
   }
