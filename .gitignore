@@ -109,3 +109,10 @@ dist
 packages/contract/typechain-types
 
 **/temp/**
+
+#Hardhat files
+cache
+/artifacts/**/*
+/deployments/localhost/*
+!/deployments/localhost/.chainId
+typechain-types/**/*
