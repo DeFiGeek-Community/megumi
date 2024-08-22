@@ -15,14 +15,17 @@ describe("MerkleAirdropLinearVesting contract", function () {
   const vestingDuration = 3600 * 24 * 100; // 100日
 
   async function deployFactoryAndTemplateFixture() {
-    const { factory, feePool, owner, addr1, addr2 } = await loadFixture(
-      deployFactoryAndFeePoolFixture
-    );
+    const { factory, feePool, distributorReceiver, owner, addr1, addr2 } =
+      await loadFixture(deployFactoryAndFeePoolFixture);
 
     const Template = await ethers.getContractFactory(
       TemplateType.LINEAR_VESTING
     );
-    const template = await Template.deploy(factory.target, feePool.target);
+    const template = await Template.deploy(
+      factory.target,
+      feePool.target,
+      distributorReceiver.target
+    );
     await template.waitForDeployment();
 
     await factory.addTemplate(
@@ -54,6 +57,7 @@ describe("MerkleAirdropLinearVesting contract", function () {
     const data = await loadFixture(deployFactoryAndTemplateFixture);
 
     const merkleAirdrop = await deployMerkleAirdrop(
+      TemplateType.LINEAR_VESTING,
       TemplateType.LINEAR_VESTING,
       data.factory,
       [
@@ -90,6 +94,7 @@ describe("MerkleAirdropLinearVesting contract", function () {
 
       const merkleAirdrop = await deployMerkleAirdrop(
         TemplateType.LINEAR_VESTING,
+        TemplateType.LINEAR_VESTING,
         factory,
         [
           owner.address,
@@ -121,6 +126,7 @@ describe("MerkleAirdropLinearVesting contract", function () {
       await expect(
         deployMerkleAirdrop(
           TemplateType.LINEAR_VESTING,
+          TemplateType.LINEAR_VESTING,
           factory,
           [
             owner.address,
@@ -146,6 +152,7 @@ describe("MerkleAirdropLinearVesting contract", function () {
       await testERC20.approve(factory.target, MaxUint);
 
       const airdrop = await deployMerkleAirdrop(
+        TemplateType.LINEAR_VESTING,
         TemplateType.LINEAR_VESTING,
         factory,
         [
@@ -176,6 +183,7 @@ describe("MerkleAirdropLinearVesting contract", function () {
       await expect(
         deployMerkleAirdrop(
           TemplateType.LINEAR_VESTING,
+          TemplateType.LINEAR_VESTING,
           factory,
           [
             owner.address,
@@ -201,6 +209,7 @@ describe("MerkleAirdropLinearVesting contract", function () {
 
       await expect(
         deployMerkleAirdrop(
+          TemplateType.LINEAR_VESTING,
           TemplateType.LINEAR_VESTING,
           factory,
           [

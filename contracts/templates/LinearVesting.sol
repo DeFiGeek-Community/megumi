@@ -16,6 +16,7 @@ contract LinearVesting is MerkleAirdropBase {
 
     uint256 public constant claimFee = 0.0001 ether;
     uint256 public constant registrationFee = 0.01 ether;
+    uint256 public constant REWARD_SCORE_PER_CLAIM = 3 ether;
 
     address public token;
     uint256 public vestingStart;
@@ -24,8 +25,9 @@ contract LinearVesting is MerkleAirdropBase {
 
     constructor(
         address factory_,
-        address feePool_
-    ) MerkleAirdropBase(factory_, feePool_) {}
+        address feePool_,
+        address distributor_
+    ) MerkleAirdropBase(factory_, feePool_, distributor_) {}
 
     function initialize(
         address owner_,
@@ -94,8 +96,10 @@ contract LinearVesting is MerkleAirdropBase {
         uint256 amount_,
         bytes32[] calldata merkleProof
     ) external payable {
-        if (claimedAmount[index_] >= amount_) revert AlreadyClaimed();
         if (msg.value != claimFee * 2) revert IncorrectAmount();
+
+        uint256 _claimedAmount = claimedAmount[index_];
+        if (claimedAmount[index_] >= amount_) revert AlreadyClaimed();
 
         // Verify the merkle proof.
         bytes32 _node = keccak256(abi.encodePacked(index_, account_, amount_));
@@ -110,7 +114,7 @@ contract LinearVesting is MerkleAirdropBase {
                 ((block.timestamp - vestingStart) * amount_) /
                 vestingDuration;
         }
-        uint256 _availableToClaim = _claimableAmount - claimedAmount[index_];
+        uint256 _availableToClaim = _claimableAmount - _claimedAmount;
 
         if (_availableToClaim == 0) revert NothingToClaim();
         if (IERC20(token).balanceOf(address(this)) < _availableToClaim)
@@ -122,6 +126,14 @@ contract LinearVesting is MerkleAirdropBase {
 
         (bool success, ) = payable(feePool).call{value: claimFee}("");
         if (!success) revert TransferFailed();
+
+        if (_claimedAmount == 0) {
+            // Add score for the first claim
+            IDistributor(distributor).addScore(
+                account_,
+                REWARD_SCORE_PER_CLAIM
+            );
+        }
 
         emit Claimed(index_, account_, _availableToClaim);
     }

@@ -8,14 +8,16 @@ contract Standard is MerkleAirdropBase {
 
     uint256 public constant claimFee = 0.0001 ether;
     uint256 public constant registrationFee = 0.01 ether;
+    uint256 public constant REWARD_SCORE_PER_CLAIM = 3 ether;
 
     address public token;
     mapping(uint256 => uint256) private claimedBitMap;
 
     constructor(
         address factory_,
-        address feePool_
-    ) MerkleAirdropBase(factory_, feePool_) {}
+        address feePool_,
+        address distributor_
+    ) MerkleAirdropBase(factory_, feePool_, distributor_) {}
 
     function initialize(
         address owner_,
@@ -111,6 +113,8 @@ contract Standard is MerkleAirdropBase {
 
         (bool success, ) = payable(feePool).call{value: claimFee}("");
         if (!success) revert TransferFailed();
+
+        IDistributor(distributor).addScore(account_, REWARD_SCORE_PER_CLAIM);
 
         emit Claimed(index_, account_, amount_);
     }

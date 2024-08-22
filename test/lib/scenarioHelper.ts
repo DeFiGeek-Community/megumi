@@ -57,13 +57,14 @@ export async function getTemplateAddr(receipt: TransactionReceipt | null) {
 }
 
 export async function deployMerkleAirdrop<T extends TemplateType>(
+  name: string,
   type: T,
   factory: Factory,
   args: TemplateArgs[T],
   creationFee: bigint,
   uuid?: string // nonce for create2
 ): Promise<TemplateContractMap[T]> {
-  const templateName = ethers.encodeBytes32String(type);
+  const templateName = ethers.encodeBytes32String(name);
   const abiCoder = ethers.AbiCoder.defaultAbiCoder();
   const encodedArgs: string = abiCoder.encode(TemplateArgs[type], args);
 
@@ -99,4 +100,43 @@ export async function simulateDeployMerkleAirdrop<T extends TemplateType>(
     { value: creationFee }
   );
   return address;
+}
+
+export async function deployCCIPRouter(linkReceiver: string): Promise<{
+  chainSelector: bigint;
+  sourceRouter: string;
+  destinationRouter: string;
+  wrappedNative: any;
+  linkToken: any;
+}> {
+  const localSimulatorFactory = await ethers.getContractFactory(
+    "CCIPLocalSimulator"
+  );
+  const localSimulator = await localSimulatorFactory.deploy();
+
+  const config: {
+    chainSelector_: bigint;
+    sourceRouter_: string;
+    destinationRouter_: string;
+    wrappedNative_: string;
+    linkToken_: string;
+    ccipBnM_: string;
+    ccipLnM_: string;
+  } = await localSimulator.configuration();
+
+  localSimulator.requestLinkFromFaucet(linkReceiver, ethers.parseEther("1"));
+
+  const linkToken = await ethers.getContractAt("TestERC20", config.linkToken_);
+  const wrappedNative = await ethers.getContractAt(
+    "TestERC20",
+    config.wrappedNative_
+  );
+
+  return {
+    chainSelector: config.chainSelector_,
+    sourceRouter: config.sourceRouter_,
+    destinationRouter: config.destinationRouter_,
+    wrappedNative: wrappedNative,
+    linkToken,
+  };
 }

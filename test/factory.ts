@@ -14,12 +14,15 @@ describe("Factory", function () {
   const initialSupply = ethers.parseEther("1000");
 
   async function deployFactoryAndTemplateFixture() {
-    const { factory, feePool, owner, addr1, addr2 } = await loadFixture(
-      deployFactoryAndFeePoolFixture
-    );
+    const { factory, feePool, distributorReceiver, owner, addr1, addr2 } =
+      await loadFixture(deployFactoryAndFeePoolFixture);
 
     const Template = await ethers.getContractFactory(TemplateType.STANDARD);
-    const template = await Template.deploy(factory.target, feePool.target);
+    const template = await Template.deploy(
+      factory.target,
+      feePool.target,
+      distributorReceiver.target
+    );
     await template.waitForDeployment();
 
     await factory.addTemplate(
@@ -132,6 +135,7 @@ describe("Factory", function () {
       await expect(
         deployMerkleAirdrop(
           TemplateType.STANDARD,
+          TemplateType.STANDARD,
           factory,
           [owner.address, airdropInfo.merkleRoot, token.target.toString(), 0n],
           ethers.parseEther("0.01")
@@ -175,6 +179,7 @@ describe("Factory", function () {
       await expect(
         deployMerkleAirdrop(
           TemplateType.STANDARD,
+          TemplateType.STANDARD,
           factory,
           [owner.address, airdropInfo.merkleRoot, token.target.toString(), 0n],
           ethers.parseEther("0.01"),
@@ -183,6 +188,7 @@ describe("Factory", function () {
       ).to.not.be.reverted;
       await expect(
         deployMerkleAirdrop(
+          TemplateType.STANDARD,
           TemplateType.STANDARD,
           factory,
           [owner.address, airdropInfo.merkleRoot, token.target.toString(), 0n],

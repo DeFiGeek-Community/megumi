@@ -3,6 +3,7 @@ pragma solidity 0.8.20;
 
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
+import "../interfaces/IDistributor.sol";
 
 contract MerkleAirdropBase {
     using SafeERC20 for IERC20;
@@ -19,6 +20,7 @@ contract MerkleAirdropBase {
     bool initialized;
     address public immutable feePool;
     address public immutable factory;
+    address public immutable distributor;
 
     address public owner;
     bytes32 public merkleRoot;
@@ -60,9 +62,10 @@ contract MerkleAirdropBase {
     /// @param amount Withdrawn fee amount
     event WithdrawnClaimFee(uint256 amount);
 
-    constructor(address factory_, address feePool_) {
+    constructor(address factory_, address feePool_, address distributor_) {
         factory = factory_;
         feePool = feePool_;
+        distributor = distributor_;
     }
 
     /// @dev Allow only owner of airdrop instance

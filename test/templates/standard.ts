@@ -4,18 +4,21 @@ import { ethers } from "hardhat";
 import { deployMerkleAirdrop } from "../lib/scenarioHelper";
 import { deployFactoryAndFeePoolFixture } from "../lib/fixtures";
 import { MaxUint, sampleAddress, airdropInfo } from "../lib/constants";
-import { TemplateType } from "../../scripts/types";
+import { TemplateType, TemplateArgs } from "../../scripts/types";
 
 describe("MerkleAirdropStandard contract", function () {
   const templateName = ethers.encodeBytes32String(TemplateType.STANDARD);
 
   async function deployFactoryAndTemplateFixture() {
-    const { factory, feePool, owner, addr1, addr2 } = await loadFixture(
-      deployFactoryAndFeePoolFixture
-    );
+    const { factory, feePool, distributorReceiver, owner, addr1, addr2 } =
+      await loadFixture(deployFactoryAndFeePoolFixture);
 
     const Template = await ethers.getContractFactory(TemplateType.STANDARD);
-    const template = await Template.deploy(factory.target, feePool.target);
+    const template = await Template.deploy(
+      factory.target,
+      feePool.target,
+      distributorReceiver.target
+    );
     await template.waitForDeployment();
 
     await factory.addTemplate(
@@ -48,6 +51,7 @@ describe("MerkleAirdropStandard contract", function () {
     const data = await loadFixture(deployFactoryAndTemplateFixture);
 
     const merkleAirdrop = await deployMerkleAirdrop(
+      TemplateType.STANDARD,
       TemplateType.STANDARD,
       data.factory,
       [
@@ -82,6 +86,7 @@ describe("MerkleAirdropStandard contract", function () {
 
       const merkleAirdrop = await deployMerkleAirdrop(
         TemplateType.STANDARD,
+        TemplateType.STANDARD,
         factory,
         [
           owner.address,
@@ -110,6 +115,7 @@ describe("MerkleAirdropStandard contract", function () {
       await expect(
         deployMerkleAirdrop(
           TemplateType.STANDARD,
+          TemplateType.STANDARD,
           factory,
           [
             owner.address,
@@ -134,6 +140,7 @@ describe("MerkleAirdropStandard contract", function () {
       await testERC20.approve(factory.target, MaxUint);
 
       const airdrop = await deployMerkleAirdrop(
+        TemplateType.STANDARD,
         TemplateType.STANDARD,
         factory,
         [
@@ -161,6 +168,7 @@ describe("MerkleAirdropStandard contract", function () {
 
       await expect(
         deployMerkleAirdrop(
+          TemplateType.STANDARD,
           TemplateType.STANDARD,
           factory,
           [
