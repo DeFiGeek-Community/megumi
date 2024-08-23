@@ -6,6 +6,8 @@ import {
   TemplateContractMap,
 } from "../../scripts/types";
 import { Factory } from "../../typechain-types/contracts/Factory";
+import { EthereumProvider } from "hardhat/types";
+import { TestERC20 } from "../../typechain-types";
 
 export async function sendERC20(
   erc20contract: any,
@@ -106,8 +108,8 @@ export async function deployCCIPRouter(linkReceiver: string): Promise<{
   chainSelector: bigint;
   sourceRouter: string;
   destinationRouter: string;
-  wrappedNative: any;
-  linkToken: any;
+  wrappedNative: TestERC20;
+  linkToken: TestERC20;
 }> {
   const localSimulatorFactory = await ethers.getContractFactory(
     "CCIPLocalSimulator"
@@ -139,4 +141,15 @@ export async function deployCCIPRouter(linkReceiver: string): Promise<{
     wrappedNative: wrappedNative,
     linkToken,
   };
+}
+
+export async function getImpersonateSigner(
+  address: `0x${string}`,
+  provider: EthereumProvider
+) {
+  await provider.request({
+    method: "hardhat_impersonateAccount",
+    params: [address],
+  });
+  return await ethers.getSigner(address);
 }
