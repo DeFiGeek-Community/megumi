@@ -1,19 +1,16 @@
 import { expect } from "chai";
 import { ethers, network } from "hardhat";
-import { loadFixture, time } from "@nomicfoundation/hardhat-network-helpers";
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import {
-  sendEther,
   deployMerkleAirdrop,
-  deployCCIPRouter,
   getImpersonateSigner,
 } from "./lib/scenarioHelper";
 import { deployFactoryAndFeePoolFixture } from "./lib/fixtures";
-import { MaxUint, sampleAddress, airdropInfo } from "./lib/constants";
+import { sampleAddress, airdropInfo } from "./lib/constants";
 import { TemplateType } from "../scripts/types";
 
 describe("DistributorCCIP", function () {
   const initialSupply = ethers.parseEther("1000");
-  const templateName = ethers.encodeBytes32String(TemplateType.STANDARD);
   const templateNameSender = `${TemplateType.STANDARD}Sender`;
   const templateNameReceiver = `${TemplateType.STANDARD}Receiver`;
   const abiCoder = ethers.AbiCoder.defaultAbiCoder();
@@ -708,7 +705,7 @@ describe("DistributorCCIP", function () {
     describe("addScore", function () {
       // 正常なスコアの追加
       it("addScore_success_1", async function () {
-        const { factory, distributorReceiver, testERC20, owner, addr1 } =
+        const { factory, distributorReceiver, testERC20, owner } =
           await loadFixture(deployFactoryAndTemplateFixture);
 
         const airdrop = await deployMerkleAirdrop(
@@ -743,247 +740,399 @@ describe("DistributorCCIP", function () {
       });
     });
 
-    // describe("rescueScore", function () {
-    //   // 正常なスコアの追加
-    //   it("rescueScore_success_1", async function () {
-    //     const { distributorReceiver, addr1 } = await loadFixture(
-    //       deployFactoryAndTemplateFixture
-    //     );
+    describe("rescueScore", function () {
+      // 正常なスコアの追加
+      it("rescueScore_success_1", async function () {
+        const { distributorReceiver, addr1 } = await loadFixture(
+          deployFactoryAndTemplateFixture
+        );
 
-    //     await distributorReceiver.rescueScore(
-    //       addr1.address,
-    //       ethers.parseEther("100")
-    //     );
+        await distributorReceiver.rescueScore(
+          addr1.address,
+          ethers.parseEther("100")
+        );
 
-    //     expect(await distributorReceiver.scores(addr1.address)).to.be.equal(
-    //       ethers.parseEther("100")
-    //     );
-    //   });
+        expect(await distributorReceiver.scores(addr1.address)).to.be.equal(
+          ethers.parseEther("100")
+        );
+      });
 
-    //   // 権限がないスコアの追加
-    //   it("rescueScore_fail_1", async function () {
-    //     const { distributorReceiver, addr1 } = await loadFixture(
-    //       deployFactoryAndTemplateFixture
-    //     );
+      // 権限がないスコアの追加
+      it("rescueScore_fail_1", async function () {
+        const { distributorReceiver, addr1 } = await loadFixture(
+          deployFactoryAndTemplateFixture
+        );
 
-    //     await expect(
-    //       distributorReceiver
-    //         .connect(addr1)
-    //         .rescueScore(addr1.address, ethers.parseEther("100"))
-    //     ).to.be.reverted;
-    //   });
-    // });
-
-    describe("setToken", function () {
-      // TODO
+        await expect(
+          distributorReceiver
+            .connect(addr1)
+            .rescueScore(addr1.address, ethers.parseEther("100"))
+        ).to.be.reverted;
+      });
     });
 
-    // describe("claim", function () {
-    //   // 正常なクレーム
-    //   it("claim_success_1", async function () {
-    //     const { factory, distributorReceiver, ymwk, owner, addr1 } =
-    //       await loadFixture(deployFactoryAndTemplateFixture);
+    describe("setToken", function () {
+      // 正常なトークンの設定
+      it("rescueScore_success_1", async function () {
+        const { distributorReceiver, mgm } = await loadFixture(
+          deployFactoryAndTemplateFixture
+        );
 
-    //     const { token } = await loadFixture(deployTokenFixture);
-    //     const allocatedAmount = ethers.parseEther("100");
-    //     await token.approve(factory.target, allocatedAmount);
-    //     const now = await time.latest();
+        expect(await distributorReceiver.token()).to.be.equal(
+          ethers.ZeroAddress
+        );
 
-    //     const sale = await deploySaleTemplate(
-    //       factory,
-    //       await token.getAddress(),
-    //       owner.address,
-    //       allocatedAmount,
-    //       now + DAY,
-    //       DAY,
-    //       "0",
-    //       undefined,
-    //       templateNameReceiver
-    //     );
+        await distributorReceiver.setToken(mgm.target);
 
-    //     await time.increase(DAY);
+        expect(await distributorReceiver.token()).to.be.equal(mgm.target);
+      });
 
-    //     await sendEther(sale.target, "1", addr1);
+      // すでにトークンが設定されている場合のトークン設定
+      it("rescueScore_fail_1", async function () {
+        const { distributorReceiver, mgm } = await loadFixture(
+          deployFactoryAndTemplateFixture
+        );
 
-    //     await time.increase(DAY);
+        expect(await distributorReceiver.token()).to.be.equal(
+          ethers.ZeroAddress
+        );
 
-    //     await sale.connect(addr1).claim(addr1.address, addr1.address);
+        await distributorReceiver.setToken(mgm.target);
 
-    //     await ymwk.transfer(
-    //       distributorReceiver.target,
-    //       ethers.parseEther("500")
-    //     );
+        expect(await distributorReceiver.token()).to.be.equal(mgm.target);
 
-    //     await expect(
-    //       distributorReceiver.connect(addr1).claim(addr1.address)
-    //     ).to.changeTokenBalances(
-    //       ymwk,
-    //       [distributorReceiver, addr1],
-    //       [ethers.parseEther("-100"), ethers.parseEther("100")]
-    //     );
+        await expect(
+          distributorReceiver.setToken(mgm.target)
+        ).to.be.rejectedWith("Token address is already set");
+      });
 
-    //     expect(await distributorReceiver.scores(addr1.address)).to.be.equal(
-    //       "0"
-    //     );
-    //   });
+      // 権限がないトークンの設定
+      it("rescueScore_fail_2", async function () {
+        const { distributorReceiver, addr1, mgm } = await loadFixture(
+          deployFactoryAndTemplateFixture
+        );
 
-    //   // スコアがないユーザのクレーム
-    //   it("claim_fail_1", async function () {
-    //     const { distributorReceiver, ymwk, addr1 } = await loadFixture(
-    //       deployFactoryAndTemplateFixture
-    //     );
+        await expect(
+          distributorReceiver.connect(addr1).setToken(mgm.target)
+        ).to.be.revertedWithCustomError(
+          distributorReceiver,
+          "OwnableUnauthorizedAccount"
+        );
+      });
+    });
 
-    //     await ymwk.transfer(
-    //       distributorReceiver.target,
-    //       ethers.parseEther("500")
-    //     );
+    describe("claim", function () {
+      // 正常なクレーム
+      it("claim_success_1", async function () {
+        const { factory, distributorReceiver, testERC20, mgm, owner } =
+          await loadFixture(deployFactoryAndTemplateFixture);
 
-    //     await expect(distributorReceiver.connect(addr1).claim(addr1.address)).to
-    //       .be.reverted;
-    //   });
+        const airdrop = await deployMerkleAirdrop(
+          templateNameReceiver,
+          TemplateType.STANDARD,
+          factory,
+          [
+            owner.address,
+            airdropInfo.merkleRoot,
+            testERC20.target.toString(),
+            0n,
+          ],
+          ethers.parseEther("0.01"),
+          airdropInfo.uuid
+        );
 
-    //   // Distributorに十分なトークン残高がない場合のクレーム
-    //   it("claim_success_2", async function () {
-    //     const { factory, distributorReceiver, ymwk, owner, addr1 } =
-    //       await loadFixture(deployFactoryAndTemplateFixture);
+        const claimInfo = airdropInfo.claims[sampleAddress];
+        const amount = BigInt(claimInfo.amount);
+        await testERC20.transfer(airdrop.target, amount);
+        await airdrop.claim(
+          claimInfo.index,
+          sampleAddress,
+          claimInfo.amount,
+          claimInfo.proof,
+          { value: ethers.parseEther("0.0002") }
+        );
 
-    //     const { token } = await loadFixture(deployTokenFixture);
-    //     const allocatedAmount = ethers.parseEther("100");
-    //     await token.approve(factory.target, allocatedAmount);
-    //     const now = await time.latest();
+        const sampleSigner = await getImpersonateSigner(
+          sampleAddress,
+          network.provider
+        );
 
-    //     const sale = await deploySaleTemplate(
-    //       factory,
-    //       await token.getAddress(),
-    //       owner.address,
-    //       allocatedAmount,
-    //       now + DAY,
-    //       DAY,
-    //       "0",
-    //       undefined,
-    //       templateNameReceiver
-    //     );
+        expect(await distributorReceiver.scores(sampleAddress)).to.be.equal(
+          ethers.parseEther("3")
+        );
 
-    //     await time.increase(DAY);
+        await mgm.transfer(
+          distributorReceiver.target,
+          ethers.parseEther("500")
+        );
+        await distributorReceiver.setToken(mgm.target);
 
-    //     await sendEther(sale.target, "1", addr1);
+        await expect(
+          distributorReceiver.connect(sampleSigner).claim(sampleAddress)
+        ).to.changeTokenBalances(
+          mgm,
+          [distributorReceiver, sampleSigner],
+          [ethers.parseEther("-3"), ethers.parseEther("3")]
+        );
+        expect(await distributorReceiver.scores(sampleAddress)).to.be.equal(
+          "0"
+        );
+      });
 
-    //     await time.increase(DAY);
+      // スコアがないユーザのクレーム
+      it("claim_fail_1", async function () {
+        const { distributorReceiver, mgm, addr1 } = await loadFixture(
+          deployFactoryAndTemplateFixture
+        );
 
-    //     await sale.connect(addr1).claim(addr1.address, addr1.address);
+        await mgm.transfer(
+          distributorReceiver.target,
+          ethers.parseEther("500")
+        );
+        await distributorReceiver.setToken(mgm.target);
 
-    //     await ymwk.transfer(
-    //       distributorReceiver.target,
-    //       ethers.parseEther("50")
-    //     );
+        await expect(
+          distributorReceiver.connect(addr1).claim(addr1.address)
+        ).to.be.revertedWith("Not eligible to get rewarded");
+      });
 
-    //     await expect(
-    //       distributorReceiver.connect(addr1).claim(addr1.address)
-    //     ).to.changeTokenBalances(
-    //       ymwk,
-    //       [distributorReceiver, addr1],
-    //       [ethers.parseEther("-50"), ethers.parseEther("50")]
-    //     );
+      // Distributorに十分なトークン残高がない場合のクレーム
+      it("claim_success_2", async function () {
+        const { factory, distributorReceiver, testERC20, mgm, owner } =
+          await loadFixture(deployFactoryAndTemplateFixture);
 
-    //     expect(await distributorReceiver.scores(addr1.address)).to.be.equal(
-    //       ethers.parseEther("50")
-    //     );
-    //   });
+        const airdrop = await deployMerkleAirdrop(
+          templateNameReceiver,
+          TemplateType.STANDARD,
+          factory,
+          [
+            owner.address,
+            airdropInfo.merkleRoot,
+            testERC20.target.toString(),
+            0n,
+          ],
+          ethers.parseEther("0.01"),
+          airdropInfo.uuid
+        );
 
-    //   // Distributorのトークン残高が0の場合のクレーム
-    //   it("claim_success_3", async function () {
-    //     const { factory, distributorReceiver, owner, addr1 } =
-    //       await loadFixture(deployFactoryAndTemplateFixture);
+        const claimInfo = airdropInfo.claims[sampleAddress];
+        const amount = BigInt(claimInfo.amount);
+        await testERC20.transfer(airdrop.target, amount);
+        await airdrop.claim(
+          claimInfo.index,
+          sampleAddress,
+          claimInfo.amount,
+          claimInfo.proof,
+          { value: ethers.parseEther("0.0002") }
+        );
 
-    //     const { token } = await loadFixture(deployTokenFixture);
-    //     const allocatedAmount = ethers.parseEther("100");
-    //     await token.approve(factory.target, allocatedAmount);
-    //     const now = await time.latest();
+        const sampleSigner = await getImpersonateSigner(
+          sampleAddress,
+          network.provider
+        );
 
-    //     const sale = await deploySaleTemplate(
-    //       factory,
-    //       await token.getAddress(),
-    //       owner.address,
-    //       allocatedAmount,
-    //       now + DAY,
-    //       DAY,
-    //       "0",
-    //       undefined,
-    //       templateNameReceiver
-    //     );
+        expect(await distributorReceiver.scores(sampleAddress)).to.be.equal(
+          ethers.parseEther("3")
+        );
 
-    //     await time.increase(DAY);
+        await mgm.transfer(distributorReceiver.target, ethers.parseEther("1"));
+        await distributorReceiver.setToken(mgm.target);
 
-    //     await sendEther(sale.target, "1", addr1);
+        await expect(
+          distributorReceiver.connect(sampleSigner).claim(sampleAddress)
+        ).to.changeTokenBalances(
+          mgm,
+          [distributorReceiver, sampleAddress],
+          [ethers.parseEther("-1"), ethers.parseEther("1")]
+        );
 
-    //     await time.increase(DAY);
+        expect(await distributorReceiver.scores(sampleAddress)).to.be.equal(
+          ethers.parseEther("2")
+        );
+      });
 
-    //     await sale.connect(addr1).claim(addr1.address, addr1.address);
+      // Distributorのトークン残高が0の場合のクレーム
+      it("claim_success_3", async function () {
+        const { factory, distributorReceiver, testERC20, mgm, owner } =
+          await loadFixture(deployFactoryAndTemplateFixture);
 
-    //     const befScore = await distributorReceiver.scores(addr1.address);
+        const airdrop = await deployMerkleAirdrop(
+          templateNameReceiver,
+          TemplateType.STANDARD,
+          factory,
+          [
+            owner.address,
+            airdropInfo.merkleRoot,
+            testERC20.target.toString(),
+            0n,
+          ],
+          ethers.parseEther("0.01"),
+          airdropInfo.uuid
+        );
 
-    //     distributorReceiver.connect(addr1).claim(addr1.address);
+        const claimInfo = airdropInfo.claims[sampleAddress];
+        const amount = BigInt(claimInfo.amount);
+        await testERC20.transfer(airdrop.target, amount);
+        await airdrop.claim(
+          claimInfo.index,
+          sampleAddress,
+          claimInfo.amount,
+          claimInfo.proof,
+          { value: ethers.parseEther("0.0002") }
+        );
 
-    //     expect(await distributorReceiver.scores(addr1.address)).to.be.equal(
-    //       befScore
-    //     );
-    //   });
+        const sampleSigner = await getImpersonateSigner(
+          sampleAddress,
+          network.provider
+        );
 
-    //   // 別アドレス宛のクレーム
-    //   it("claim_success_4", async function () {
-    //     const { factory, distributorReceiver, ymwk, owner, addr1, addr2 } =
-    //       await loadFixture(deployFactoryAndTemplateFixture);
+        expect(await distributorReceiver.scores(sampleAddress)).to.be.equal(
+          ethers.parseEther("3")
+        );
 
-    //     const { token } = await loadFixture(deployTokenFixture);
-    //     const allocatedAmount = ethers.parseEther("100");
-    //     await token.approve(factory.target, allocatedAmount);
-    //     const now = await time.latest();
+        await distributorReceiver.setToken(mgm.target);
 
-    //     const sale = await deploySaleTemplate(
-    //       factory,
-    //       await token.getAddress(),
-    //       owner.address,
-    //       allocatedAmount,
-    //       now + DAY,
-    //       DAY,
-    //       "0",
-    //       undefined,
-    //       templateNameReceiver
-    //     );
+        await expect(
+          distributorReceiver.connect(sampleSigner).claim(sampleAddress)
+        ).to.changeTokenBalances(
+          mgm,
+          [distributorReceiver, sampleAddress],
+          [ethers.parseEther("0"), ethers.parseEther("0")]
+        );
 
-    //     await time.increase(DAY);
+        expect(await distributorReceiver.scores(sampleAddress)).to.be.equal(
+          ethers.parseEther("3")
+        );
+      });
 
-    //     await sendEther(sale.target, "1", addr1);
+      // 別アドレス宛のクレーム
+      it("claim_success_4", async function () {
+        const { factory, distributorReceiver, testERC20, mgm, owner, addr1 } =
+          await loadFixture(deployFactoryAndTemplateFixture);
 
-    //     await time.increase(DAY);
+        const airdrop = await deployMerkleAirdrop(
+          templateNameReceiver,
+          TemplateType.STANDARD,
+          factory,
+          [
+            owner.address,
+            airdropInfo.merkleRoot,
+            testERC20.target.toString(),
+            0n,
+          ],
+          ethers.parseEther("0.01"),
+          airdropInfo.uuid
+        );
 
-    //     await sale.connect(addr1).claim(addr1.address, addr1.address);
+        const claimInfo = airdropInfo.claims[sampleAddress];
+        const amount = BigInt(claimInfo.amount);
+        await testERC20.transfer(airdrop.target, amount);
+        await airdrop.claim(
+          claimInfo.index,
+          sampleAddress,
+          claimInfo.amount,
+          claimInfo.proof,
+          { value: ethers.parseEther("0.0002") }
+        );
 
-    //     await ymwk.transfer(
-    //       distributorReceiver.target,
-    //       ethers.parseEther("50")
-    //     );
+        const sampleSigner = await getImpersonateSigner(
+          sampleAddress,
+          network.provider
+        );
 
-    //     await expect(
-    //       distributorReceiver.connect(addr2).claim(addr1.address)
-    //     ).to.changeTokenBalances(
-    //       ymwk,
-    //       [distributorReceiver, addr1, addr2],
-    //       [
-    //         ethers.parseEther("-50"),
-    //         ethers.parseEther("50"),
-    //         ethers.parseEther("0"),
-    //       ]
-    //     );
+        expect(await distributorReceiver.scores(sampleAddress)).to.be.equal(
+          ethers.parseEther("3")
+        );
 
-    //     expect(await distributorReceiver.scores(addr1.address)).to.be.equal(
-    //       ethers.parseEther("50")
-    //     );
-    //   });
-    // });
+        await mgm.transfer(
+          distributorReceiver.target,
+          ethers.parseEther("500")
+        );
+        await distributorReceiver.setToken(mgm.target);
+
+        await expect(
+          distributorReceiver.connect(addr1).claim(sampleAddress)
+        ).to.changeTokenBalances(
+          mgm,
+          [distributorReceiver, sampleSigner],
+          [ethers.parseEther("-3"), ethers.parseEther("3")]
+        );
+        expect(await distributorReceiver.scores(sampleAddress)).to.be.equal(
+          "0"
+        );
+      });
+    });
 
     describe("withdrawToken", function () {
-      // TODO
+      // 正常なトークンの引き出し
+      it("withdrawToken_success_1", async function () {
+        const { distributorReceiver, mgm, owner } = await loadFixture(
+          deployFactoryAndTemplateFixture
+        );
+
+        await distributorReceiver.setToken(mgm.target);
+        await mgm.transfer(distributorReceiver.target, ethers.parseEther("1"));
+        await expect(
+          distributorReceiver.withdrawToken(
+            mgm.target,
+            owner.address,
+            ethers.parseEther("1")
+          )
+        ).to.changeTokenBalances(
+          mgm,
+          [distributorReceiver, owner],
+          [ethers.parseEther("-1"), ethers.parseEther("1")]
+        );
+      });
+
+      // ゼロアドレストークンの引き出し
+      it("withdrawToken_fail_1", async function () {
+        const { distributorReceiver, mgm, owner } = await loadFixture(
+          deployFactoryAndTemplateFixture
+        );
+
+        await expect(
+          distributorReceiver.withdrawToken(
+            ethers.ZeroAddress,
+            owner.address,
+            ethers.parseEther("1")
+          )
+        ).to.revertedWithCustomError(distributorReceiver, "AddressEmptyCode");
+      });
+
+      // 残高より多いトークンの引き出し
+      it("withdrawToken_fail_2", async function () {
+        const { distributorReceiver, mgm, owner } = await loadFixture(
+          deployFactoryAndTemplateFixture
+        );
+
+        await mgm.transfer(distributorReceiver.target, ethers.parseEther("1"));
+        await expect(
+          distributorReceiver.withdrawToken(
+            mgm.target,
+            owner.address,
+            ethers.parseEther("2")
+          )
+        ).to.revertedWithCustomError(mgm, "ERC20InsufficientBalance");
+      });
+
+      // 権限がないトークンの設定
+      it("withdrawToken_fail_3", async function () {
+        const { distributorReceiver, mgm, owner, addr1 } = await loadFixture(
+          deployFactoryAndTemplateFixture
+        );
+
+        await distributorReceiver.setToken(mgm.target);
+        await mgm.transfer(distributorReceiver.target, ethers.parseEther("1"));
+        await expect(
+          distributorReceiver
+            .connect(addr1)
+            .withdrawToken(mgm.target, owner.address, ethers.parseEther("1"))
+        ).to.be.revertedWithCustomError(
+          distributorReceiver,
+          "OwnableUnauthorizedAccount"
+        );
+      });
     });
   });
 });

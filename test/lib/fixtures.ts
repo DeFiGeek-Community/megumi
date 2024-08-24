@@ -15,7 +15,7 @@ export async function deployFactoryAndFeePoolFixture() {
   await feePool.waitForDeployment();
 
   const MGM = await ethers.getContractFactory("TestERC20");
-  const mgm = await MGM.deploy("Sample", "SMPL", ethers.parseEther("50000000"));
+  const mgm = await MGM.deploy("Megumi", "MGM", ethers.parseEther("50000000"));
   await mgm.waitForDeployment();
 
   const {
