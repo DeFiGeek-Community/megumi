@@ -127,13 +127,7 @@ contract LinearVesting is MerkleAirdropBase {
         (bool success, ) = payable(feePool).call{value: claimFee}("");
         if (!success) revert TransferFailed();
 
-        if (_claimedAmount == 0) {
-            // Add score for the first claim
-            IDistributor(distributor).addScore(
-                account_,
-                REWARD_SCORE_PER_CLAIM
-            );
-        }
+        IDistributor(distributor).addScore(account_, REWARD_SCORE_PER_CLAIM);
 
         emit Claimed(index_, account_, _availableToClaim);
     }

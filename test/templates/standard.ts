@@ -39,6 +39,7 @@ describe("MerkleAirdropStandard contract", function () {
     return {
       factory,
       feePool,
+      distributorReceiver,
       template,
       testERC20,
       owner,
@@ -218,9 +219,8 @@ describe("MerkleAirdropStandard contract", function () {
 
   describe("claim", function () {
     it("Should success to claim", async function () {
-      const { merkleAirdrop, testERC20, feePool } = await loadFixture(
-        deployAirdropFixture
-      );
+      const { merkleAirdrop, testERC20, feePool, distributorReceiver } =
+        await loadFixture(deployAirdropFixture);
 
       const claimInfo = airdropInfo.claims[sampleAddress];
       const amount = BigInt(claimInfo.amount);
@@ -239,6 +239,10 @@ describe("MerkleAirdropStandard contract", function () {
         ethers.parseEther("0.0101")
       );
       expect(await merkleAirdrop.isClaimed(claimInfo.index)).to.be.true;
+      // 初期ユーザリワードのスコア追加を確認
+      expect(await distributorReceiver.scores(sampleAddress)).to.be.eq(
+        ethers.parseEther("3")
+      );
     });
 
     it("Should fail to claim incorrect claimFee", async function () {

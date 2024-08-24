@@ -46,6 +46,7 @@ describe("MerkleAirdropLinearVesting contract", function () {
     return {
       factory,
       feePool,
+      distributorReceiver,
       template,
       testERC20,
       owner,
@@ -241,9 +242,8 @@ describe("MerkleAirdropLinearVesting contract", function () {
 
   describe("claim", function () {
     it("Should success to claim and fail to re-claim", async function () {
-      const { merkleAirdrop, feePool, testERC20 } = await loadFixture(
-        deployAirdropFixture
-      );
+      const { merkleAirdrop, feePool, distributorReceiver, testERC20 } =
+        await loadFixture(deployAirdropFixture);
 
       const claimInfo = airdropInfo.claims[sampleAddress];
       const amount = BigInt(claimInfo.amount);
@@ -260,6 +260,12 @@ describe("MerkleAirdropLinearVesting contract", function () {
           { value: ethers.parseEther("0.0002") }
         )
       ).to.changeTokenBalance(testERC20, sampleAddress, amount);
+
+      // 初期ユーザリワードのスコア追加を確認
+      expect(await distributorReceiver.scores(sampleAddress)).to.be.eq(
+        ethers.parseEther("3")
+      );
+
       // Fee poolの残高がregistrationFee + claimFeeであることを確認
       expect(await ethers.provider.getBalance(feePool.target)).to.be.eq(
         ethers.parseEther("0.0101")
@@ -394,9 +400,8 @@ describe("MerkleAirdropLinearVesting contract", function () {
     });
 
     it("Should success to claim half and the full eligible amount after 50 days and 100 days respectively", async function () {
-      const { merkleAirdrop, testERC20, feePool } = await loadFixture(
-        deployAirdropFixture
-      );
+      const { merkleAirdrop, testERC20, feePool, distributorReceiver } =
+        await loadFixture(deployAirdropFixture);
 
       const claimInfo = airdropInfo.claims[sampleAddress];
       const amount = BigInt(claimInfo.amount);
@@ -423,6 +428,11 @@ describe("MerkleAirdropLinearVesting contract", function () {
         amount / 2n
       );
 
+      // 初期ユーザリワードのスコア追加を確認
+      expect(await distributorReceiver.scores(sampleAddress)).to.be.eq(
+        ethers.parseEther("3")
+      );
+
       await snapshot.restore();
 
       // 1) FeePoolへのプラットフォームFee送信
@@ -438,6 +448,11 @@ describe("MerkleAirdropLinearVesting contract", function () {
       ).to.changeEtherBalances(
         [feePool, merkleAirdrop],
         [ethers.parseEther("0.0001"), ethers.parseEther("0.0001")]
+      );
+
+      // 初期ユーザリワードのスコア追加を確認
+      expect(await distributorReceiver.scores(sampleAddress)).to.be.eq(
+        ethers.parseEther("3")
       );
 
       expect(
@@ -466,6 +481,11 @@ describe("MerkleAirdropLinearVesting contract", function () {
         testERC20,
         [merkleAirdrop, sampleAddress],
         [-amount / 2n, amount / 2n]
+      );
+
+      // 2度目のクレーム時も初期ユーザリワードのスコア追加を確認
+      expect(await distributorReceiver.scores(sampleAddress)).to.be.eq(
+        ethers.parseEther("6")
       );
 
       expect(await merkleAirdrop.claimedAmount(claimInfo.index)).to.be.eq(
