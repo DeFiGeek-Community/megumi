@@ -7,7 +7,7 @@
     "deploy:local": "hardhat deploy --network localhost",
     "deploy:mainnet": "hardhat deploy --network mainnet",
     "deploy:sepolia": "hardhat deploy --network sepolia",
-    "deploy:base_mainnet": "hardhat deploy --network mainnet",
+    "deploy:base_mainnet": "hardhat deploy --network base_mainnet",
     "deploy:base_sepolia": "hardhat deploy --network base_sepolia",
     "verify:mainnet": "npx hardhat run scripts/verify.ts --network mainnet",
     "verify:sepolia": "npx hardhat run scripts/verify.ts --network sepolia",
