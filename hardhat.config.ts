@@ -23,19 +23,30 @@ const config: HardhatUserConfig = {
     mainnet: {
       url: `https://mainnet.infura.io/v3/${INFURA_KEY}`,
       accounts: [`${PRIVATE_KEY}`],
-    },
-    goerli: {
-      url: `https://goerli.infura.io/v3/${INFURA_KEY}`,
-      accounts: [`${PRIVATE_KEY}`],
+      tags: ["receiver"],
     },
     sepolia: {
       url: `https://sepolia.infura.io/v3/${INFURA_KEY}`,
       accounts: [`${PRIVATE_KEY}`],
+      tags: ["receiver"],
+    },
+    base_sepolia: {
+      url: `https://sepolia.base.org`,
+      chainId: 84532,
+      accounts: [`${PRIVATE_KEY}`],
+      tags: ["sender"],
+    },
+    base_mainnet: {
+      url: `https://mainnet.base.org`,
+      chainId: 8453,
+      accounts: [`${PRIVATE_KEY}`],
+      tags: ["sender"],
     },
     hardhat: {
       forking: {
         url: `https://mainnet.infura.io/v3/${INFURA_KEY}`,
       },
+      tags: ["receiver"],
     },
   },
   etherscan: {

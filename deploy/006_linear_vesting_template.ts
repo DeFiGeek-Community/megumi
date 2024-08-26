@@ -9,7 +9,7 @@ import {
   addTemplate,
 } from "../scripts/deployUtil";
 
-const codename = TemplateType.STANDARD;
+const codename = TemplateType.LINEAR_VESTING;
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { ethers, network } = hre;
@@ -17,7 +17,18 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const foundation = await getFoundation();
   const factoryAddress = getContractAddress(network.name, "Factory");
   const feePoolAddress = getContractAddress(network.name, "FeePool");
-  if (factoryAddress === null || feePoolAddress === null) {
+  const distributorContractName = hre.network.tags.sender
+    ? "DistributorSender"
+    : "DistributorReceiver";
+  const distributorAddress = getContractAddress(
+    hre.network.name,
+    distributorContractName
+  );
+  if (
+    factoryAddress === null ||
+    feePoolAddress === null ||
+    distributorAddress === null
+  ) {
     throw new Error("factory or feepool address is null");
   }
 
@@ -27,7 +38,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
     Template = await deploy(codename, {
       from: foundation,
-      args: [factoryAddress, feePoolAddress],
+      args: [factoryAddress, feePoolAddress, distributorAddress],
       log: true,
       getContractFactory,
       subdir: "templates",
