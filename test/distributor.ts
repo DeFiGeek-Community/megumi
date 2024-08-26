@@ -9,8 +9,7 @@ import { deployFactoryAndFeePoolFixture } from "./lib/fixtures";
 import { sampleAddress, airdropInfo } from "./lib/constants";
 import { TemplateType } from "../scripts/types";
 
-describe("DistributorCCIP", function () {
-  const initialSupply = ethers.parseEther("1000");
+describe("Distributor", function () {
   const templateNameSender = `${TemplateType.STANDARD}Sender`;
   const templateNameReceiver = `${TemplateType.STANDARD}Receiver`;
   const abiCoder = ethers.AbiCoder.defaultAbiCoder();
@@ -82,33 +81,6 @@ describe("DistributorCCIP", function () {
       addr2,
       Template,
     };
-  }
-  async function deployAirdropFixture() {
-    const data = await loadFixture(deployFactoryAndTemplateFixture);
-
-    const merkleAirdrop = await deployMerkleAirdrop(
-      TemplateType.STANDARD,
-      TemplateType.STANDARD,
-      data.factory,
-      [
-        data.owner.address,
-        airdropInfo.merkleRoot,
-        data.testERC20.target.toString(),
-        0n,
-      ],
-      ethers.parseEther("0.01"),
-      airdropInfo.uuid
-    );
-
-    return { ...data, merkleAirdrop };
-  }
-
-  async function deployTokenFixture() {
-    const Token = await ethers.getContractFactory("TestERC20");
-    const token = await Token.deploy("Test", "TST", initialSupply);
-    await token.waitForDeployment();
-
-    return { token };
   }
 
   describe("Sender", function () {
