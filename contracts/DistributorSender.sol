@@ -69,11 +69,11 @@ contract DistributorSender is Ownable {
 
     function setAllowlistDestinationChainSender(
         uint64 _destinationChainSelector,
-        address _sender,
+        address _receiver,
         bool allowed
     ) external onlyOwner {
         allowlistedDestinationChainSenders[_destinationChainSelector][
-            _sender
+            _receiver
         ] = allowed;
     }
 
