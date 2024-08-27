@@ -21,13 +21,41 @@ async function main() {
     constructorArguments: [foundation.address],
   });
 
+  // CCIP Router
+  const routerAddress = readFileSync(basePath + "Router").toString();
+  let ccipDistributorAddress;
+
+  if (network.tags.receiver) {
+    // DistributorReceiver
+    ccipDistributorAddress = readFileSync(
+      basePath + "DistributorReceiver"
+    ).toString();
+    await run(`verify:verify`, {
+      address: ccipDistributorAddress,
+      constructorArguments: [factoryAddress, routerAddress, foundation.address],
+    });
+  } else if (network.tags.sender) {
+    // DistributorSender
+    ccipDistributorAddress = readFileSync(
+      basePath + "DistributorSender"
+    ).toString();
+    await run(`verify:verify`, {
+      address: ccipDistributorAddress,
+      constructorArguments: [factoryAddress, routerAddress, foundation.address],
+    });
+  }
+
   // Standard template
   const standardAddress = readFileSync(
     basePath + TemplateType.STANDARD
   ).toString();
   await run(`verify:verify`, {
     address: standardAddress,
-    constructorArguments: [factoryAddress, feePoolAddress],
+    constructorArguments: [
+      factoryAddress,
+      feePoolAddress,
+      ccipDistributorAddress,
+    ],
   });
 
   // LinearVesting template
@@ -36,7 +64,11 @@ async function main() {
   ).toString();
   await run(`verify:verify`, {
     address: linearVestingAddress,
-    constructorArguments: [factoryAddress, feePoolAddress],
+    constructorArguments: [
+      factoryAddress,
+      feePoolAddress,
+      ccipDistributorAddress,
+    ],
   });
 }
 
