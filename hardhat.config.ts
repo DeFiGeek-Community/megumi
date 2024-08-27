@@ -6,7 +6,8 @@ import "hardhat-deploy";
 import "hardhat-gas-reporter";
 import "dotenv/config";
 
-const { INFURA_KEY, ETHERSCAN_API_KEY, PRIVATE_KEY } = process.env;
+const { INFURA_KEY, ETHERSCAN_API_KEY, BASESCAN_API_KEY, PRIVATE_KEY } =
+  process.env;
 
 const config: HardhatUserConfig = {
   solidity: {
@@ -50,7 +51,13 @@ const config: HardhatUserConfig = {
     },
   },
   etherscan: {
-    apiKey: ETHERSCAN_API_KEY,
+    apiKey: {
+      mainnet: ETHERSCAN_API_KEY!,
+      sepolia: ETHERSCAN_API_KEY!,
+      baseSepolia: BASESCAN_API_KEY!,
+      base: BASESCAN_API_KEY!,
+    },
+    // apiKey: ETHERSCAN_API_KEY,
   },
   gasReporter: {
     enabled: true,
