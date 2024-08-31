@@ -99,7 +99,7 @@ contract LinearVesting is MerkleAirdropBase {
         if (msg.value != claimFee * 2) revert IncorrectAmount();
 
         uint256 _claimedAmount = claimedAmount[index_];
-        if (claimedAmount[index_] >= amount_) revert AlreadyClaimed();
+        if (_claimedAmount >= amount_) revert AlreadyClaimed();
 
         // Verify the merkle proof.
         bytes32 _node = keccak256(abi.encodePacked(index_, account_, amount_));
