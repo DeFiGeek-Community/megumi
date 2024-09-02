@@ -1,8 +1,8 @@
 # merkle-airdrop-tool
 
-merkle-airdrop-tool is a generic merkle-distributor contract that identifies airdrop information by name.
+Megumi is a generic merkle-distributor contract that identifies airdrop information by name.
 
-This repository is powered by [@uniswap/merkle-distributor](https://github.com/Uniswap/merkle-distributor) and [@uniswap/permit2](https://github.com/Uniswap/permit2).
+This repository is powered by [@uniswap/merkle-distributor](https://github.com/Uniswap/merkle-distributor)
 
 # Local Development
 
@@ -21,14 +21,14 @@ The following assumes the use of `node@>=16`.
 npm i
 ```
 
-## Run interface
+## Generate type files
 
 ```bash
-npm run user-app-dev
+npx hardhat typechain
 ```
 
 ## Run tests for contracts
 
 ```bash
-npm run contract:test
+npm run test
 ```
