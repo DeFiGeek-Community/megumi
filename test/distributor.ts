@@ -114,7 +114,7 @@ describe("Distributor", function () {
     describe("addScore", function () {
       // 正常なスコアの追加
       it("addScore_success_1", async function () {
-        const { factory, distributorSender, testERC20, owner, addr1 } =
+        const { factory, distributorSender, testERC20, owner } =
           await loadFixture(deployFactoryAndTemplateFixture);
 
         const airdrop = await deployMerkleAirdrop(
@@ -309,9 +309,13 @@ describe("Distributor", function () {
         expect(await distributorReceiver.scores(sampleAddress)).to.be.equal(
           "0"
         );
+        const sampleSigner = await getImpersonateSigner(
+          sampleAddress,
+          network.provider
+        );
         await expect(
           distributorSender
-            .connect(addr1)
+            .connect(sampleSigner)
             .sendScorePayToken(
               chainSelector,
               distributorReceiver.target,
@@ -420,7 +424,8 @@ describe("Distributor", function () {
           ethers.parseEther("3")
         );
       });
-      // 別アドレス宛のクレーム
+
+      // L1の別アドレス宛へのスコア送信（Native）
       it("claim_success_4", async function () {
         const {
           factory,
@@ -430,7 +435,9 @@ describe("Distributor", function () {
           testERC20,
           mgm,
           owner,
+          addr2,
         } = await loadFixture(deployFactoryAndTemplateFixture);
+
         await distributorSender.setAllowlistDestinationChainSender(
           chainSelector,
           distributorReceiver.target,
@@ -441,6 +448,9 @@ describe("Distributor", function () {
           distributorSender.target,
           true
         );
+
+        mgm.transfer(distributorReceiver.target, ethers.parseEther("1000"));
+
         const airdrop = await deployMerkleAirdrop(
           templateNameSender,
           TemplateType.STANDARD,
@@ -466,6 +476,11 @@ describe("Distributor", function () {
           { value: ethers.parseEther("0.0002") }
         );
 
+        const sampleSigner = await getImpersonateSigner(
+          sampleAddress,
+          network.provider
+        );
+
         const message = {
           receiver: abiCoder.encode(["bytes"], [distributorReceiver.target]),
           data: abiCoder.encode(
@@ -476,38 +491,176 @@ describe("Distributor", function () {
           extraArgs: "0x",
           feeToken: ethers.ZeroAddress,
         };
+
         const router = await ethers.getContractAt(
           "IRouterClient",
           await distributorSender.router()
         );
         const feeAmount = await router.getFee(chainSelector, message);
-        mgm.transfer(distributorReceiver.target, ethers.parseEther("1000"));
+
         expect(await distributorSender.scores(sampleAddress)).to.be.equal(
           ethers.parseEther("3")
         );
+        expect(await distributorSender.scores(addr2.address)).to.be.equal("0");
+
         expect(await distributorReceiver.scores(sampleAddress)).to.be.equal(
           "0"
         );
+        expect(await distributorReceiver.scores(addr2.address)).to.be.equal(
+          "0"
+        );
+        expect(await mgm.balanceOf(sampleAddress)).to.be.equal("0");
+        expect(await mgm.balanceOf(addr2.address)).to.be.equal("0");
 
         await distributorReceiver.setToken(mgm.target);
 
         await expect(
-          distributorSender.sendScorePayNative(
-            chainSelector,
-            distributorReceiver.target,
-            sampleAddress,
-            true,
-            { value: feeAmount }
-          )
+          distributorSender
+            .connect(sampleSigner)
+            .sendScorePayNative(
+              chainSelector,
+              distributorReceiver.target,
+              addr2.address,
+              true,
+              { value: feeAmount }
+            )
         ).to.not.be.reverted;
+
         expect(await distributorSender.scores(sampleAddress)).to.be.equal("0");
+        expect(await distributorSender.scores(addr2.address)).to.be.equal("0");
         expect(await distributorReceiver.scores(sampleAddress)).to.be.equal(
           ethers.parseEther("0")
         );
-        expect(await mgm.balanceOf(sampleAddress)).to.be.equal(
+        expect(await distributorReceiver.scores(addr2.address)).to.be.equal(
+          ethers.parseEther("0")
+        );
+        expect(await mgm.balanceOf(sampleAddress)).to.be.equal("0");
+        expect(await mgm.balanceOf(addr2.address)).to.be.equal(
           ethers.parseEther("3")
         );
       });
+
+      // L1の別アドレス宛へのスコア送信（Token）
+      it("claim_success_5", async function () {
+        const {
+          factory,
+          chainSelector,
+          distributorSender,
+          distributorReceiver,
+          testERC20,
+          mgm,
+          linkToken,
+          owner,
+          addr2,
+        } = await loadFixture(deployFactoryAndTemplateFixture);
+
+        await distributorSender.setAllowlistDestinationChainSender(
+          chainSelector,
+          distributorReceiver.target,
+          true
+        );
+        await distributorReceiver.setAllowlistSourceChainSender(
+          chainSelector,
+          distributorSender.target,
+          true
+        );
+
+        mgm.transfer(distributorReceiver.target, ethers.parseEther("1000"));
+        linkToken.transfer(owner.address, ethers.parseEther("0.1"));
+
+        const airdrop = await deployMerkleAirdrop(
+          templateNameSender,
+          TemplateType.STANDARD,
+          factory,
+          [
+            owner.address,
+            airdropInfo.merkleRoot,
+            testERC20.target.toString(),
+            0n,
+          ],
+          ethers.parseEther("0.01"),
+          airdropInfo.uuid
+        );
+
+        const claimInfo = airdropInfo.claims[sampleAddress];
+        const amount = BigInt(claimInfo.amount);
+        await testERC20.transfer(airdrop.target, amount);
+        await airdrop.claim(
+          claimInfo.index,
+          sampleAddress,
+          claimInfo.amount,
+          claimInfo.proof,
+          { value: ethers.parseEther("0.0002") }
+        );
+
+        const sampleSigner = await getImpersonateSigner(
+          sampleAddress,
+          network.provider
+        );
+
+        const message = {
+          receiver: abiCoder.encode(["bytes"], [distributorReceiver.target]),
+          data: abiCoder.encode(
+            ["address", "uint256", "bool"],
+            [sampleAddress, ethers.parseEther("3"), true]
+          ),
+          tokenAmounts: [],
+          extraArgs: "0x",
+          feeToken: linkToken.target,
+        };
+
+        const router = await ethers.getContractAt(
+          "IRouterClient",
+          await distributorSender.router()
+        );
+        const feeAmount = await router.getFee(chainSelector, message);
+
+        await linkToken
+          .connect(owner)
+          .approve(distributorSender.target, feeAmount);
+
+        expect(await distributorSender.scores(sampleAddress)).to.be.equal(
+          ethers.parseEther("3")
+        );
+        expect(await distributorSender.scores(addr2.address)).to.be.equal("0");
+
+        expect(await distributorReceiver.scores(sampleAddress)).to.be.equal(
+          "0"
+        );
+        expect(await distributorReceiver.scores(addr2.address)).to.be.equal(
+          "0"
+        );
+        expect(await mgm.balanceOf(sampleAddress)).to.be.equal("0");
+        expect(await mgm.balanceOf(addr2.address)).to.be.equal("0");
+
+        await distributorReceiver.setToken(mgm.target);
+
+        await expect(
+          distributorSender
+            .connect(sampleSigner)
+            .sendScorePayToken(
+              chainSelector,
+              distributorReceiver.target,
+              addr2.address,
+              true,
+              linkToken
+            )
+        ).to.not.be.reverted;
+
+        expect(await distributorSender.scores(sampleAddress)).to.be.equal("0");
+        expect(await distributorSender.scores(addr2.address)).to.be.equal("0");
+        expect(await distributorReceiver.scores(sampleAddress)).to.be.equal(
+          ethers.parseEther("0")
+        );
+        expect(await distributorReceiver.scores(addr2.address)).to.be.equal(
+          ethers.parseEther("0")
+        );
+        expect(await mgm.balanceOf(sampleAddress)).to.be.equal("0");
+        expect(await mgm.balanceOf(addr2.address)).to.be.equal(
+          ethers.parseEther("3")
+        );
+      });
+
       // sender,receiverの設定不足エラー
       it("claim_fail_1", async function () {
         const {
@@ -628,6 +781,207 @@ describe("Distributor", function () {
             sampleAddress,
             false,
             { value: feeAmount }
+          )
+        ).to.be.revertedWith("Not eligible to get rewarded");
+      });
+
+      // スコアが無いアドレスから別アドレス宛のクレーム（ownerがaddr1へスコア送信, Native）
+      it("claim_fail_3", async function () {
+        const {
+          factory,
+          chainSelector,
+          distributorSender,
+          distributorReceiver,
+          testERC20,
+          mgm,
+          owner,
+          addr2,
+        } = await loadFixture(deployFactoryAndTemplateFixture);
+
+        await distributorSender.setAllowlistDestinationChainSender(
+          chainSelector,
+          distributorReceiver.target,
+          true
+        );
+        await distributorReceiver.setAllowlistSourceChainSender(
+          chainSelector,
+          distributorSender.target,
+          true
+        );
+
+        mgm.transfer(distributorReceiver.target, ethers.parseEther("1000"));
+
+        const airdrop = await deployMerkleAirdrop(
+          templateNameSender,
+          TemplateType.STANDARD,
+          factory,
+          [
+            owner.address,
+            airdropInfo.merkleRoot,
+            testERC20.target.toString(),
+            0n,
+          ],
+          ethers.parseEther("0.01"),
+          airdropInfo.uuid
+        );
+
+        const claimInfo = airdropInfo.claims[sampleAddress];
+        const amount = BigInt(claimInfo.amount);
+        await testERC20.transfer(airdrop.target, amount);
+        await airdrop.claim(
+          claimInfo.index,
+          sampleAddress,
+          claimInfo.amount,
+          claimInfo.proof,
+          { value: ethers.parseEther("0.0002") }
+        );
+
+        const message = {
+          receiver: abiCoder.encode(["bytes"], [distributorReceiver.target]),
+          data: abiCoder.encode(
+            ["address", "uint256", "bool"],
+            [sampleAddress, ethers.parseEther("3"), true]
+          ),
+          tokenAmounts: [],
+          extraArgs: "0x",
+          feeToken: ethers.ZeroAddress,
+        };
+
+        const router = await ethers.getContractAt(
+          "IRouterClient",
+          await distributorSender.router()
+        );
+        const feeAmount = await router.getFee(chainSelector, message);
+
+        expect(await distributorSender.scores(sampleAddress)).to.be.equal(
+          ethers.parseEther("3")
+        );
+        expect(await distributorSender.scores(addr2.address)).to.be.equal("0");
+
+        expect(await distributorReceiver.scores(sampleAddress)).to.be.equal(
+          "0"
+        );
+        expect(await distributorReceiver.scores(addr2.address)).to.be.equal(
+          "0"
+        );
+        expect(await mgm.balanceOf(sampleAddress)).to.be.equal("0");
+        expect(await mgm.balanceOf(addr2.address)).to.be.equal("0");
+
+        await distributorReceiver.setToken(mgm.target);
+
+        await expect(
+          distributorSender.sendScorePayNative(
+            chainSelector,
+            distributorReceiver.target,
+            addr2.address,
+            true,
+            { value: feeAmount }
+          )
+        ).to.be.revertedWith("Not eligible to get rewarded");
+      });
+
+      // スコアが無いアドレスから別アドレス宛のクレーム（ownerがaddr1へスコア送信, Token
+      it("claim_fail_4", async function () {
+        const {
+          factory,
+          chainSelector,
+          distributorSender,
+          distributorReceiver,
+          testERC20,
+          mgm,
+          linkToken,
+          owner,
+          addr2,
+        } = await loadFixture(deployFactoryAndTemplateFixture);
+
+        await distributorSender.setAllowlistDestinationChainSender(
+          chainSelector,
+          distributorReceiver.target,
+          true
+        );
+        await distributorReceiver.setAllowlistSourceChainSender(
+          chainSelector,
+          distributorSender.target,
+          true
+        );
+
+        mgm.transfer(distributorReceiver.target, ethers.parseEther("1000"));
+        linkToken.transfer(owner.address, ethers.parseEther("0.1"));
+
+        const airdrop = await deployMerkleAirdrop(
+          templateNameSender,
+          TemplateType.STANDARD,
+          factory,
+          [
+            owner.address,
+            airdropInfo.merkleRoot,
+            testERC20.target.toString(),
+            0n,
+          ],
+          ethers.parseEther("0.01"),
+          airdropInfo.uuid
+        );
+
+        const claimInfo = airdropInfo.claims[sampleAddress];
+        const amount = BigInt(claimInfo.amount);
+        await testERC20.transfer(airdrop.target, amount);
+        await airdrop.claim(
+          claimInfo.index,
+          sampleAddress,
+          claimInfo.amount,
+          claimInfo.proof,
+          { value: ethers.parseEther("0.0002") }
+        );
+
+        const sampleSigner = await getImpersonateSigner(
+          sampleAddress,
+          network.provider
+        );
+
+        const message = {
+          receiver: abiCoder.encode(["bytes"], [distributorReceiver.target]),
+          data: abiCoder.encode(
+            ["address", "uint256", "bool"],
+            [sampleAddress, ethers.parseEther("3"), true]
+          ),
+          tokenAmounts: [],
+          extraArgs: "0x",
+          feeToken: linkToken.target,
+        };
+
+        const router = await ethers.getContractAt(
+          "IRouterClient",
+          await distributorSender.router()
+        );
+        const feeAmount = await router.getFee(chainSelector, message);
+
+        await linkToken
+          .connect(owner)
+          .approve(distributorSender.target, feeAmount);
+
+        expect(await distributorSender.scores(sampleAddress)).to.be.equal(
+          ethers.parseEther("3")
+        );
+        expect(await distributorSender.scores(addr2.address)).to.be.equal("0");
+
+        expect(await distributorReceiver.scores(sampleAddress)).to.be.equal(
+          "0"
+        );
+        expect(await distributorReceiver.scores(addr2.address)).to.be.equal(
+          "0"
+        );
+        expect(await mgm.balanceOf(sampleAddress)).to.be.equal("0");
+        expect(await mgm.balanceOf(addr2.address)).to.be.equal("0");
+
+        await distributorReceiver.setToken(mgm.target);
+
+        await expect(
+          distributorSender.sendScorePayToken(
+            chainSelector,
+            distributorReceiver.target,
+            addr2.address,
+            true,
+            linkToken
           )
         ).to.be.revertedWith("Not eligible to get rewarded");
       });
